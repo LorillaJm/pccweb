@@ -290,8 +290,8 @@ function LoginContent() {
                   </form>
 
                   {/* Divider */}
-                  {/* Social Login Buttons */}
-                  {true && (
+                  {/* Social Login Buttons - Disabled until OAuth credentials are configured */}
+                  {false && (
                     <>
                       <div className="my-6 sm:my-8">
                         <div className="relative">
