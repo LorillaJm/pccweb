@@ -595,7 +595,7 @@ export default function Register() {
                     <button
                       type="button"
                       onClick={() => {
-                        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://pccweb.onrender.com/api';
                         window.location.href = `${apiBase}/auth/google`;
                       }}
                       className="w-full flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 border-2 border-gray-200 rounded-xl bg-white text-gray-700 font-semibold hover:bg-gray-50 hover:border-gray-300 focus:outline-none focus:ring-4 focus:ring-gray-200/50 transform hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md text-sm sm:text-base"
@@ -613,7 +613,7 @@ export default function Register() {
                     <button
                       type="button"
                       onClick={() => {
-                        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+                        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://pccweb.onrender.com/api';
                         window.location.href = `${apiBase}/auth/apple`;
                       }}
                       className="w-full flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 border-2 border-gray-900 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 hover:border-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-900/25 transform hover:scale-[1.02] transition-all duration-200 shadow-sm hover:shadow-md text-sm sm:text-base"
