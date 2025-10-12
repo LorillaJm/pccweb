@@ -48,6 +48,9 @@ const { errorHandler } = require('./middleware/errorHandler');
 connectDB();
 
 const app = express();
+
+// Trust proxy - Required for Render and other proxy services
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
