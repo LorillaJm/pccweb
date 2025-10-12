@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/futuristic-design-system.css";
 
 :root {
   --background: #ffffff;
@@ -10,10 +11,22 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-inter: var(--font-inter);
+  --font-poppins: var(--font-poppins);
+  --font-space-grotesk: var(--font-space-grotesk);
+  
+  /* Premium font aliases */
+  --font-body: var(--font-inter);
+  --font-headline: var(--font-poppins);
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light) {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
@@ -23,4 +36,600 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Navigation Animations */
+@keyframes slide-down {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-down {
+  animation: slide-down 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-slide-in {
+  animation: slide-in 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.4s ease-out;
+}
+
+.animate-shimmer {
+  animation: shimmer 3s linear infinite;
+}
+
+/* Z-Index Hierarchy - Professional Layering System */
+/* Base layers: 0-49 */
+.nav-mobile-overlay {
+  z-index: 40;
+}
+
+/* Navigation layer: 50-99 */
+.nav-base {
+  z-index: 50;
+}
+
+.nav-submenu {
+  z-index: 55;
+}
+
+/* Dropdowns and popovers: 9000-9999 */
+.dropdown-above-nav {
+  z-index: 9000 !important;
+}
+
+.nav-language-switcher {
+  z-index: 9999 !important;
+}
+
+/* Notifications and alerts: 99000-99999 */
+.notification-layer {
+  z-index: 99000 !important;
+}
+
+.alert-layer {
+  z-index: 99500 !important;
+}
+
+.toast-layer {
+  z-index: 99999 !important;
+}
+
+/* Search Results - Highest Priority */
+.search-results-dropdown {
+  z-index: 9999 !important;
+  position: relative;
+}
+
+.search-results-container {
+  z-index: 9999 !important;
+  position: absolute;
+}
+
+/* Ensure search results appear above everything */
+.search-dropdown-overlay {
+  z-index: 9998 !important;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.search-dropdown-content {
+  z-index: 9999 !important;
+  position: relative;
+  pointer-events: auto;
+}
+
+/* Professional Button Styles */
+.professional-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.professional-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.professional-btn:hover::before {
+  left: 100%;
+}
+
+/* Responsive Search Bar Enhancements */
+.search-input-responsive {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-input-responsive:focus {
+  transform: scale(1.02);
+}
+
+/* Search Input Text Color Adaptations */
+.search-light input {
+  color: #1f2937;
+}
+
+.search-light input::placeholder {
+  color: #6b7280;
+}
+
+.search-dark input {
+  color: #f9fafb;
+}
+
+.search-dark input::placeholder {
+  color: #9ca3af;
+}
+
+.search-navigation input {
+  color: #ffffff;
+}
+
+.search-navigation input::placeholder {
+  color: #d1d5db;
+}
+
+/* Smooth Search Transitions */
+.search-container {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.search-dropdown {
+  will-change: transform, opacity, height;
+  backface-visibility: hidden;
+}
+
+.search-expanding {
+  contain: layout style paint;
+}
+
+.search-height-transition {
+  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-ease-in-out {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.search-gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+.search-stable-layout {
+  contain: layout;
+  overflow: hidden;
+}
+
+/* Accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.focus-visible:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Touch-friendly utilities */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .nav-mobile-optimized {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .search-mobile-optimized {
+    font-size: 16px;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .nav-item {
+    border: 1px solid currentColor;
+  }
+  
+  .search-input-responsive {
+    border: 2px solid currentColor;
+  }
+}
+/* Search Results Mobile Responsiveness */
+@media (max-width: 768px) {
+  .search-results-dropdown {
+    position: fixed !important;
+    top: auto !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    bottom: auto !important;
+    width: auto !important;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 9999 !important;
+  }
+  
+  /* Mobile search overlay */
+  .search-mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    z-index: 9998;
+  }
+}
+
+/* Ensure search results are always visible */
+.search-results-visible {
+  z-index: 9999 !important;
+  position: relative;
+}
+
+/* Fix for any stacking context issues */
+.search-container {
+  position: relative;
+  z-index: 9999;
+}
+
+.search-container * {
+  position: relative;
+}
+
+/* Override any conflicting z-index */
+.search-override-z-index {
+  z-index: 9999 !important;
+}
+
+/* Responsive search positioning */
+@media (min-width: 769px) {
+  .search-results-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+}
+
+/* Ensure search results don't get clipped */
+.search-no-clip {
+  overflow: visible !important;
+}
+
+.search-parent-container {
+  position: relative;
+  z-index: 9999;
+  overflow: visible;
+}
+
+/* Portal-based Search Results */
+#portal-root {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 99999 !important;
+}
+
+.search-results-portal {
+  position: absolute !important;
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure search results are always on top */
+.search-portal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 99998 !important;
+  pointer-events: auto !important;
+}
+
+/* Mobile search results positioning */
+@media (max-width: 768px) {
+  .search-results-dropdown {
+    position: fixed !important;
+    top: 50% !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto !important;
+    transform: translateY(-50%) !important;
+    max-height: 70vh !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* Prevent body scroll when search is open on mobile */
+.search-modal-open {
+  overflow: hidden !important;
+}
+
+/* High contrast for search results */
+.search-results-dropdown {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ensure proper stacking above all content */
+.search-absolute-top {
+  z-index: 2147483647 !important; /* Maximum z-index value */
+}
+
+/* Search Input Clear Button Styling */
+.search-clear-button {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.search-clear-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.search-clear-button:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Light theme clear button */
+.search-light .search-clear-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Dark theme clear button */
+.search-dark .search-clear-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Navigation theme clear button */
+.search-navigation .search-clear-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Ensure proper spacing for text input */
+.search-input-with-clear {
+  padding-right: 3rem !important;
+}
+
+/* Mobile optimizations for clear button */
+@media (max-width: 640px) {
+  .search-clear-button {
+    right: 0.75rem;
+    padding: 0.375rem;
+  }
+}
+
+/* Fixed Navigation Spacing */
+.fixed-nav-spacing {
+  padding-top: 6.5rem; /* Space for fixed navigation + top bar */
+}
+
+/* Ensure main content doesn't hide behind fixed nav */
+main {
+  padding-top: 0;
+}
+
+/* For pages with fixed navigation */
+.with-fixed-nav {
+  padding-top: 6.5rem; /* 104px - accounts for top bar + main nav */
+}
+
+/* For pages with fixed navigation + announcement ticker */
+.with-fixed-nav-and-ticker {
+  padding-top: 9.5rem; /* 152px - accounts for top bar + main nav + ticker */
+}
+
+/* Responsive navigation spacing */
+@media (max-width: 1024px) {
+  .with-fixed-nav {
+    padding-top: 5rem; /* 80px - no top bar on mobile */
+  }
+  
+  .with-fixed-nav-and-ticker {
+    padding-top: 8rem; /* 128px - no top bar on mobile but has ticker */
+  }
+}
+
+/* Smooth navigation transitions */
+.nav-fixed {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 50 !important;
+}
+
+/* Navigation scroll transition */
+.nav-scrolled {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  color: rgb(15, 23, 42) !important;
+}
+
+.nav-default {
+  background: linear-gradient(to right, rgb(30, 58, 138), rgb(30, 64, 175), rgb(67, 56, 202)) !important;
+  color: white !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* Professional Alert & Notification Styles */
+.alert-container {
+  position: fixed;
+  top: 5rem;
+  right: 1rem;
+  left: 1rem;
+  z-index: 99500;
+  pointer-events: none;
+}
+
+.alert-container > * {
+  pointer-events: auto;
+}
+
+/* Responsive alert positioning */
+@media (min-width: 640px) {
+  .alert-container {
+    left: auto;
+    max-width: 28rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .alert-container {
+    top: 6rem;
+  }
+}
+
+/* Toast notification animations */
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes toast-slide-out {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.toast-enter {
+  animation: toast-slide-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.toast-exit {
+  animation: toast-slide-out 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Professional shadow effects for elevated components */
+.elevated-shadow {
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+.elevated-shadow-lg {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+}
+
+/* Backdrop blur for modern glass effect */
+.glass-effect {
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
+
+.glass-effect-strong {
+  backdrop-filter: blur(20px) saturate(200%);
+  -webkit-backdrop-filter: blur(20px) saturate(200%);
 }

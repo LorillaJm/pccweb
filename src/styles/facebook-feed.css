@@ -1,0 +1,117 @@
+/* Facebook Feed Custom Styles */
+
+.facebook-feed-container {
+  /* Smooth scrolling for mobile */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom backdrop blur for better browser support */
+.facebook-backdrop-blur {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Enhanced gradient animations */
+.facebook-gradient-animate {
+  background-size: 200% 200%;
+  animation: gradientShift 6s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Smooth hover transitions */
+.facebook-post-card {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.facebook-post-card:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Enhanced shadow effects */
+.facebook-shadow-xl {
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.facebook-shadow-2xl {
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive text scaling */
+@media (max-width: 640px) {
+  .facebook-title {
+    font-size: 2rem;
+    line-height: 2.25rem;
+  }
+  
+  .facebook-subtitle {
+    font-size: 1rem;
+    line-height: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .facebook-title {
+    font-size: 3rem;
+    line-height: 3.5rem;
+  }
+  
+  .facebook-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+}
+
+/* Loading animation improvements */
+.facebook-loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced focus states for accessibility */
+.facebook-interactive:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.facebook-interactive:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Smooth image loading */
+.facebook-image {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.facebook-image[data-loaded="false"] {
+  opacity: 0;
+}
+
+.facebook-image[data-loaded="true"] {
+  opacity: 1;
+}

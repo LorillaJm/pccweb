@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Balay",
+    "about": "Parte",
+    "programs": "Mga Programa",
+    "admissions": "Pagbaton",
+    "contact": "Kontak",
+    "portal": "Portal",
+    "login": "Mag-login",
+    "register": "Magrehistro"
+  },
+  "hero": {
+    "title": "Maayong Pag-abot sa Passi City College",
+    "subtitle": "Kahusayan sa Edukasyon",
+    "description": "Pagpabaskog sang mga hunahuna, paghulma sang kaugmaon. Apil sa amon komunidad sang mga estudyante kag diskobre ang imo potensyal.",
+    "cta": {
+      "apply": "Mag-apply Subong",
+      "learn": "Mahibalo Pa"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Maayong Pagbalik",
+      "subtitle": "Mag-sign in para magpadayon sang imo akademikong paglakaton",
+      "email": "Email Address",
+      "password": "Password",
+      "submit": "Mag-sign In sa Portal",
+      "signingIn": "Naga-sign In...",
+      "forgotPassword": "Nakalimtan ang Password?",
+      "noAccount": "Wala account?",
+      "createAccount": "Himuon Account",
+      "orContinue": "Ukon magpadayon gamit ang",
+      "google": "Magpadayon gamit ang Google",
+      "apple": "Magpadayon gamit ang Apple",
+      "backToWebsite": "Balik sa Panguna nga Website",
+      "demoAccounts": "Demo Accounts",
+      "student": "Estudyante",
+      "faculty": "Maestro",
+      "admin": "Admin",
+      "password_label": "Password"
+    },
+    "register": {
+      "title": "Himuon ang Imo Account",
+      "subtitle": "Apil sa komunidad sang PCC kag sugdan ang imo akademikong paglakaton",
+      "accountType": "Klase sang Account",
+      "studentAccount": "Estudyante",
+      "studentDesc": "Mag-enroll sa mga kurso kag mag-access sang mga materyales",
+      "facultyAccount": "Maestro",
+      "facultyDesc": "Magtudlo kag mag-manage sang mga kurso",
+      "firstName": "Ngalan",
+      "lastName": "Apelyido",
+      "middleName": "Tunga nga Ngalan (Opsyonal)",
+      "studentId": "Student ID (Opsyonal)",
+      "employeeId": "Employee ID (Opsyonal)",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Kumpirmahin ang Password",
+      "phone": "Numero sang Telepono (Opsyonal)",
+      "dateOfBirth": "Petsa sang Pagkatawo (Opsyonal)",
+      "gender": "Sekso (Opsyonal)",
+      "address": "Address (Opsyonal)",
+      "submit": "Himuon Account",
+      "creating": "Ginahimo ang Account...",
+      "haveAccount": "May account na?",
+      "signIn": "Mag-sign In"
+    }
+  },
+  "programs": {
+    "title": "Amon Mga Programa",
+    "subtitle": "Diskobre ang imo dalan sa kalampusan",
+    "viewAll": "Tan-awa Tanan nga Programa"
+  },
+  "footer": {
+    "about": "Parte sa PCC",
+    "quickLinks": "Madali nga Mga Link",
+    "contact": "Kontak Kami",
+    "followUs": "Sunda Kami",
+    "copyright": "© 2024 Passi City College. Tanan nga katungod ginreserba.",
+    "address": "Passi City, Iloilo, Pilipinas",
+    "phone": "Telepono",
+    "email": "Email"
+  }
+}

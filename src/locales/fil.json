@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Tahanan",
+    "about": "Tungkol",
+    "programs": "Mga Programa",
+    "admissions": "Pagtanggap",
+    "contact": "Makipag-ugnayan",
+    "portal": "Portal",
+    "login": "Mag-login",
+    "register": "Magrehistro"
+  },
+  "hero": {
+    "title": "Maligayang Pagdating sa Passi City College",
+    "subtitle": "Kahusayan sa Edukasyon",
+    "description": "Pagpapalakas ng mga isipan, paghubog ng kinabukasan. Sumali sa aming komunidad ng mga nag-aaral at tuklasin ang iyong potensyal.",
+    "cta": {
+      "apply": "Mag-apply Ngayon",
+      "learn": "Matuto Pa"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Maligayang Pagbabalik",
+      "subtitle": "Mag-sign in upang ipagpatuloy ang iyong akademikong paglalakbay",
+      "email": "Email Address",
+      "password": "Password",
+      "submit": "Mag-sign In sa Portal",
+      "signingIn": "Nagsa-sign In...",
+      "forgotPassword": "Nakalimutan ang Password?",
+      "noAccount": "Walang account?",
+      "createAccount": "Gumawa ng Account",
+      "orContinue": "O magpatuloy gamit ang",
+      "google": "Magpatuloy gamit ang Google",
+      "apple": "Magpatuloy gamit ang Apple",
+      "backToWebsite": "Bumalik sa Pangunahing Website",
+      "demoAccounts": "Demo Accounts",
+      "student": "Estudyante",
+      "faculty": "Guro",
+      "admin": "Admin",
+      "password_label": "Password"
+    },
+    "register": {
+      "title": "Gumawa ng Iyong Account",
+      "subtitle": "Sumali sa komunidad ng PCC at simulan ang iyong akademikong paglalakbay",
+      "accountType": "Uri ng Account",
+      "studentAccount": "Estudyante",
+      "studentDesc": "Mag-enroll sa mga kurso at mag-access ng mga materyales",
+      "facultyAccount": "Guro",
+      "facultyDesc": "Magturo at pamahalaan ang mga kurso",
+      "firstName": "Pangalan",
+      "lastName": "Apelyido",
+      "middleName": "Gitnang Pangalan (Opsyonal)",
+      "studentId": "Student ID (Opsyonal)",
+      "employeeId": "Employee ID (Opsyonal)",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Kumpirmahin ang Password",
+      "phone": "Numero ng Telepono (Opsyonal)",
+      "dateOfBirth": "Petsa ng Kapanganakan (Opsyonal)",
+      "gender": "Kasarian (Opsyonal)",
+      "address": "Address (Opsyonal)",
+      "submit": "Gumawa ng Account",
+      "creating": "Gumagawa ng Account...",
+      "haveAccount": "Mayroon nang account?",
+      "signIn": "Mag-sign In"
+    }
+  },
+  "programs": {
+    "title": "Aming Mga Programa",
+    "subtitle": "Tuklasin ang iyong landas sa tagumpay",
+    "viewAll": "Tingnan Lahat ng Programa"
+  },
+  "footer": {
+    "about": "Tungkol sa PCC",
+    "quickLinks": "Mabilis na Mga Link",
+    "contact": "Makipag-ugnayan Sa Amin",
+    "followUs": "Sundin Kami",
+    "copyright": "© 2024 Passi City College. Lahat ng karapatan ay nakalaan.",
+    "address": "Passi City, Iloilo, Pilipinas",
+    "phone": "Telepono",
+    "email": "Email"
+  }
+}

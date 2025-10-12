@@ -1,0 +1,83 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "programs": "Programs",
+    "admissions": "Admissions",
+    "contact": "Contact",
+    "portal": "Portal",
+    "login": "Login",
+    "register": "Register"
+  },
+  "hero": {
+    "title": "Welcome to Passi City College",
+    "subtitle": "Excellence in Education",
+    "description": "Empowering minds, shaping futures. Join our community of learners and discover your potential.",
+    "cta": {
+      "apply": "Apply Now",
+      "learn": "Learn More"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to continue your academic journey",
+      "email": "Email Address",
+      "password": "Password",
+      "submit": "Sign In to Portal",
+      "signingIn": "Signing In...",
+      "forgotPassword": "Forgot Password?",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create Account",
+      "orContinue": "Or continue with",
+      "google": "Continue with Google",
+      "apple": "Continue with Apple",
+      "backToWebsite": "Back to Main Website",
+      "demoAccounts": "Demo Accounts",
+      "student": "Student",
+      "faculty": "Faculty",
+      "admin": "Admin",
+      "password_label": "Password"
+    },
+    "register": {
+      "title": "Create Your Account",
+      "subtitle": "Join the PCC community and start your academic journey",
+      "accountType": "Account Type",
+      "studentAccount": "Student",
+      "studentDesc": "Enroll in courses and access materials",
+      "facultyAccount": "Faculty",
+      "facultyDesc": "Teach and manage courses",
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "middleName": "Middle Name (Optional)",
+      "studentId": "Student ID (Optional)",
+      "employeeId": "Employee ID (Optional)",
+      "email": "Email Address",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "phone": "Phone Number (Optional)",
+      "dateOfBirth": "Date of Birth (Optional)",
+      "gender": "Gender (Optional)",
+      "address": "Address (Optional)",
+      "submit": "Create Account",
+      "creating": "Creating Account...",
+      "haveAccount": "Already have an account?",
+      "signIn": "Sign In"
+    }
+  },
+  "programs": {
+    "title": "Our Programs",
+    "subtitle": "Discover your path to success",
+    "viewAll": "View All Programs"
+  },
+  "footer": {
+    "about": "About PCC",
+    "quickLinks": "Quick Links",
+    "contact": "Contact Us",
+    "followUs": "Follow Us",
+    "copyright": "© 2024 Passi City College. All rights reserved.",
+    "address": "Passi City, Iloilo, Philippines",
+    "phone": "Phone",
+    "email": "Email"
+  }
+}
