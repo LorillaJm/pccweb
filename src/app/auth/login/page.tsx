@@ -292,8 +292,8 @@ function LoginContent() {
                   </form>
 
                   {/* Divider */}
-                  {/* Social Login Buttons - Temporarily disabled until backend is deployed */}
-                  {false && (
+                  {/* Social Login Buttons */}
+                  {true && (
                     <>
                       <div className="my-6 sm:my-8">
                         <div className="relative">
