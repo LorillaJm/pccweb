@@ -37,18 +37,20 @@ function AuthCallbackContent() {
         localStorage.setItem('accessToken', token);
         localStorage.setItem('refreshToken', refreshToken);
 
+        console.log('Tokens stored successfully');
+
         setStatus('success');
         setMessage(`Successfully authenticated with ${provider || 'social provider'}!`);
 
-        // Redirect immediately to portal - the auth context will pick up the tokens
+        // Force a full page reload to reinitialize AuthContext with tokens
         setTimeout(() => {
-          window.location.href = '/portal/student'; // Use window.location for full page reload
-        }, 1000);
+          window.location.href = '/portal/student';
+        }, 500);
 
       } catch (error) {
         console.error('Auth callback error:', error);
         setStatus('error');
-        setMessage('An unexpected error occurred during authentication.');
+        setMessage(`An unexpected error occurred during authentication. ${error instanceof Error ? error.message : ''}`);
       }
     };
 
