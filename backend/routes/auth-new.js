@@ -11,15 +11,15 @@ const router = express.Router();
 // Generate JWT tokens
 const generateTokens = (userId, email, role) => {
   const payload = { userId, email, role };
-  
+
   const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '24h'
   });
-  
+
   const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
     expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d'
   });
-  
+
   return { accessToken, refreshToken };
 };
 
@@ -164,7 +164,7 @@ router.post('/login', [
 
     // Verify password
     const isValidPassword = await user.comparePassword(password);
-    
+
     if (!isValidPassword) {
       return res.status(401).json({
         success: false,
@@ -181,7 +181,7 @@ router.post('/login', [
       if (err) {
         return next(err);
       }
-      
+
       res.json({
         success: true,
         message: 'Login successful',
@@ -209,46 +209,66 @@ router.get('/google', passport.authenticate('google', {
   scope: ['profile', 'email']
 }));
 
-router.get('/google/callback', 
+router.get('/google/callback',
   (req, res, next) => {
+    console.log('=== Google OAuth Callback Started ===');
+    console.log('Query params:', req.query);
+
     passport.authenticate('google', (err, user, info) => {
+      console.log('Passport authenticate result:', {
+        hasError: !!err,
+        hasUser: !!user,
+        userEmail: user?.email,
+        info
+      });
+
       if (err) {
         console.error('Google OAuth error:', err);
         const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        console.log('Redirecting to error page:', `${frontendURL}/auth/error`);
         return res.redirect(`${frontendURL}/auth/error?message=${encodeURIComponent(err.message || 'Authentication failed')}`);
       }
-      
+
       if (!user) {
         console.error('Google OAuth failed - no user returned:', info);
         const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        console.log('Redirecting to error page (no user):', `${frontendURL}/auth/error`);
         return res.redirect(`${frontendURL}/auth/error?message=${encodeURIComponent(info?.message || 'Authentication failed')}`);
       }
-      
+
+      console.log('Attempting to log in user:', user.email);
       req.logIn(user, async (loginErr) => {
         if (loginErr) {
           console.error('Login error after Google OAuth:', loginErr);
           const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+          console.log('Redirecting to error page (login failed):', `${frontendURL}/auth/error`);
           return res.redirect(`${frontendURL}/auth/error?message=${encodeURIComponent('Login failed')}`);
         }
-        
+
         try {
           // Update last login
           user.lastLogin = new Date();
           await user.save();
-          
+
+          // Generate JWT tokens for cross-domain auth
+          const jwt = require('jsonwebtoken');
+          const accessToken = jwt.sign(
+            { userId: user._id, email: user.email, role: user.role },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+          );
+
+          const refreshToken = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+            { expiresIn: '30d' }
+          );
+
           const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
-          
-          // Redirect to appropriate dashboard based on role
-          if (user.role === 'student') {
-            res.redirect(`${frontendURL}/portal/student`);
-          } else if (user.role === 'faculty') {
-            res.redirect(`${frontendURL}/portal/faculty`);
-          } else if (user.role === 'admin' || user.role === 'super_admin') {
-            res.redirect(`${frontendURL}/admin`);
-          } else {
-            res.redirect(`${frontendURL}/portal/student`); // Default fallback
-          }
-          
+
+          // Redirect to callback page with tokens in URL
+          res.redirect(`${frontendURL}/auth/callback?token=${accessToken}&refresh=${refreshToken}&provider=google`);
+
         } catch (error) {
           console.error('Google OAuth callback error:', error);
           const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
@@ -291,7 +311,7 @@ router.post('/apple/callback', (req, res, next) => {
           error: err.message || 'Apple authentication failed'
         });
       }
-      
+
       if (!user) {
         console.error('Apple OAuth failed - no user returned:', info);
         return res.status(400).json({
@@ -300,7 +320,7 @@ router.post('/apple/callback', (req, res, next) => {
           error: info?.message || 'Apple authentication failed'
         });
       }
-      
+
       req.logIn(user, async (loginErr) => {
         if (loginErr) {
           console.error('Login error after Apple OAuth:', loginErr);
@@ -310,12 +330,12 @@ router.post('/apple/callback', (req, res, next) => {
             error: 'Login failed after authentication'
           });
         }
-        
+
         try {
           // Update last login
           user.lastLogin = new Date();
           await user.save();
-          
+
           // Return success response with user data
           res.json({
             success: true,
@@ -332,7 +352,7 @@ router.post('/apple/callback', (req, res, next) => {
               }
             }
           });
-          
+
         } catch (error) {
           console.error('Apple OAuth callback error:', error);
           res.status(500).json({
@@ -430,7 +450,7 @@ router.get('/me', validateSession, async (req, res, next) => {
       user = await User.findById(req.user._id).select('-password');
     } catch (dbError) {
       console.error('Database error during user lookup:', dbError);
-      
+
       // Check if it's a connection error
       if (dbError.name === 'MongoNetworkError' || dbError.name === 'MongoTimeoutError') {
         return res.status(503).json({
@@ -440,7 +460,7 @@ router.get('/me', validateSession, async (req, res, next) => {
           retryAfter: 5
         });
       }
-      
+
       // Generic database error
       return res.status(500).json({
         success: false,
@@ -452,14 +472,14 @@ router.get('/me', validateSession, async (req, res, next) => {
     // User not found - clear invalid session
     if (!user) {
       console.warn(`User not found for session: ${req.user._id}`);
-      
+
       return new Promise((resolve) => {
         req.logout((err) => {
           if (err) console.error('Error logging out after user not found:', err);
-          
+
           req.session.destroy((destroyErr) => {
             if (destroyErr) console.error('Error destroying session:', destroyErr);
-            
+
             res.clearCookie('connect.sid');
             res.status(401).json({
               success: false,
@@ -475,14 +495,14 @@ router.get('/me', validateSession, async (req, res, next) => {
     // User deactivated - clear session
     if (!user.isActive) {
       console.warn(`Deactivated user attempted access: ${user.email}`);
-      
+
       return new Promise((resolve) => {
         req.logout((err) => {
           if (err) console.error('Error logging out deactivated user:', err);
-          
+
           req.session.destroy((destroyErr) => {
             if (destroyErr) console.error('Error destroying session:', destroyErr);
-            
+
             res.clearCookie('connect.sid');
             res.status(403).json({
               success: false,
@@ -532,7 +552,7 @@ router.get('/me', validateSession, async (req, res, next) => {
 
   } catch (error) {
     console.error('Unexpected error in /auth/me:', error);
-    
+
     // Handle different error types
     if (error.name === 'CastError') {
       return res.status(400).json({
@@ -541,7 +561,7 @@ router.get('/me', validateSession, async (req, res, next) => {
         sessionStatus: 'error'
       });
     }
-    
+
     // Generic server error
     res.status(500).json({
       success: false,
@@ -645,7 +665,7 @@ router.put('/profile', [
 
     // Update allowed fields
     const allowedFields = [
-      'firstName', 'lastName', 'studentId', 'program', 
+      'firstName', 'lastName', 'studentId', 'program',
       'yearLevel', 'section', 'employeeId', 'department', 'position'
     ];
 
