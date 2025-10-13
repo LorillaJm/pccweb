@@ -441,8 +441,35 @@ router.post('/logout', async (req, res, next) => {
   }
 });
 
-// Get current user profile (Passport session-based)
-router.get('/me', validateSession, async (req, res, next) => {
+// Middleware to accept both session and JWT
+const authenticateUser = async (req, res, next) => {
+  // Try JWT first
+  const authHeader = req.header('Authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.substring(7);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.userId);
+      if (user && user.isActive) {
+        req.user = user;
+        return next();
+      }
+    } catch (err) {
+      // JWT failed, try session
+    }
+  }
+  
+  // Try session
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Both failed
+  return res.status(401).json({ message: 'Not authenticated' });
+};
+
+// Get current user profile (supports both session and JWT)
+router.get('/me', authenticateUser, async (req, res, next) => {
   try {
     // User lookup with proper error handling
     let user;
