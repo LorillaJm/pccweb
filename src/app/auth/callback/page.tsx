@@ -36,19 +36,14 @@ function AuthCallbackContent() {
         // Store tokens
         localStorage.setItem('accessToken', token);
         localStorage.setItem('refreshToken', refreshToken);
-        
-        // Update auth context
-        if (setTokens) {
-          setTokens(token, refreshToken);
-        }
 
         setStatus('success');
         setMessage(`Successfully authenticated with ${provider || 'social provider'}!`);
 
-        // Redirect after a short delay
+        // Redirect immediately to portal - the auth context will pick up the tokens
         setTimeout(() => {
-          router.push('/portal/student'); // Default redirect, will be handled by auth context
-        }, 2000);
+          window.location.href = '/portal/student'; // Use window.location for full page reload
+        }, 1000);
 
       } catch (error) {
         console.error('Auth callback error:', error);

@@ -12,11 +12,18 @@ const api = axios.create({
   },
 });
 
-// Request interceptor to include credentials for session-based auth
+// Request interceptor to include credentials and JWT token
 api.interceptors.request.use(
   (config) => {
     // Include credentials for session-based authentication
     config.withCredentials = true;
+    
+    // Also include JWT token if available (for OAuth)
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    
     return config;
   },
   (error) => {
@@ -44,7 +51,7 @@ api.interceptors.response.use(
     } else {
       console.log('API Error:', error.message);
     }
-    
+
     // Do not globally redirect on 401 here to avoid navigation loops.
     // Let views handle unauthorized states explicitly.
     return Promise.reject(error);
