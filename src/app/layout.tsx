@@ -12,6 +12,8 @@ import OnlineStatus from "@/components/pwa/OnlineStatus";
 import PWAInitializer from "@/components/pwa/PWAInitializer";
 import PerformanceMonitor from "@/components/performance/PerformanceMonitor";
 import SkipToContent from "@/components/accessibility/SkipToContent";
+import { SkipLink } from "@/components/accessibility/SkipLink";
+import { KeyboardNavigationInit } from "@/components/accessibility/KeyboardNavigationInit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -99,6 +101,8 @@ export default function RootLayout({
             <SettingsProvider>
               <AuthProvider>
                 <MotionProvider>
+                  <KeyboardNavigationInit />
+                  <SkipLink />
                   <SkipToContent />
                   <PWAInitializer />
                   <PerformanceMonitor />

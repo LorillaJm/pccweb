@@ -213,11 +213,10 @@ export const PremiumInput = forwardRef<HTMLInputElement, PremiumInputProps>(
               w-full px-4 rounded-lg
               border-2 transition-colors
               bg-surface text-textLight
-              focus:outline-none focus:ring-4
+              focus-ring premium-input
               disabled:opacity-50 disabled:cursor-not-allowed
               ${sizeClasses[size]}
               ${validationColors[validationState]}
-              ${focusRingColors[validationState]}
               ${label && shouldFloat ? 'pt-6 pb-2' : ''}
             `.trim().replace(/\s+/g, ' ')}
             {...inputProps}

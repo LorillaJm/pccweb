@@ -2,11 +2,23 @@ const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database-adapter');
 const { verifyToken, requireAnyRole } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/sessionAuth');
 
 const router = express.Router();
 
+// Middleware to accept both session and JWT
+const authenticateUser = (req, res, next) => {
+  // Try session first
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Fall back to JWT
+  return verifyToken(req, res, next);
+};
+
 // Update user profile
-router.put('/profile', verifyToken, requireAnyRole, [
+router.put('/profile', authenticateUser, requireAnyRole, [
   body('firstName').optional().trim().isLength({ min: 1 }),
   body('lastName').optional().trim().isLength({ min: 1 }),
   body('phone').optional().trim(),
@@ -68,7 +80,7 @@ router.put('/profile', verifyToken, requireAnyRole, [
 });
 
 // Update student-specific profile
-router.put('/student-profile', verifyToken, async (req, res, next) => {
+router.put('/student-profile', authenticateUser, async (req, res, next) => {
   try {
     if (req.user.role !== 'student') {
       return res.status(403).json({

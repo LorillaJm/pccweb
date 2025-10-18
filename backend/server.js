@@ -70,6 +70,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Session middleware for passport
+const isProduction = process.env.NODE_ENV === 'production';
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -78,16 +79,32 @@ app.use(session({
     mongoUrl: process.env.MONGODB_URI
   }),
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: isProduction, // true in production (https), false in development (http)
+    sameSite: isProduction ? 'none' : 'lax', // 'none' for cross-origin in production, 'lax' for localhost
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    httpOnly: true
+    httpOnly: true,
+    ...(isProduction ? {} : { domain: 'localhost' }) // Only set domain in development
   }
 }));
 
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Debug middleware to log session info (development only)
+if (!isProduction) {
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+      console.log('Session ID:', req.sessionID);
+      console.log('Session exists:', !!req.session);
+      console.log('User authenticated:', req.isAuthenticated ? req.isAuthenticated() : false);
+      console.log('User:', req.user ? { id: req.user._id, email: req.user.email, role: req.user.role } : 'None');
+      console.log('---');
+    }
+    next();
+  });
+}
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

@@ -122,6 +122,12 @@ export const useChatbot = (): UseChatbotReturn => {
       if (!response.ok) {
         const errorText = await response.text();
         console.error('Chatbot API error response:', errorText);
+        
+        // Provide user-friendly error message for authentication issues
+        if (response.status === 401) {
+          throw new Error('Please log in to use the chatbot');
+        }
+        
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
 
@@ -215,6 +221,11 @@ export const useChatbot = (): UseChatbotReturn => {
       });
 
       if (!response.ok) {
+        // If unauthorized (not logged in), silently fail - this is expected for guest users
+        if (response.status === 401) {
+          console.log('User not authenticated - conversation history unavailable');
+          return;
+        }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
