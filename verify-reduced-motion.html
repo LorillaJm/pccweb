@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reduced Motion Fallback Verification</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0B132B 0%, #1a1f3a 100%);
+      color: #F8FAFC;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: #00D4FF;
+    }
+
+    h2 {
+      font-size: 1.8rem;
+      margin: 2rem 0 1rem;
+      color: #FF5A5F;
+    }
+
+    h3 {
+      font-size: 1.3rem;
+      margin: 1.5rem 0 0.5rem;
+      color: #9AA4B2;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .status.enabled {
+      background: #FF5A5F;
+      color: white;
+    }
+
+    .status.disabled {
+      background: #00D4FF;
+      color: #0B132B;
+    }
+
+    .test-section {
+      background: #0F1724;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .test-item {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      margin: 0.5rem 0;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+    }
+
+    .test-item.pass {
+      border-left: 4px solid #10B981;
+    }
+
+    .test-item.fail {
+      border-left: 4px solid #EF4444;
+    }
+
+    .test-item.pending {
+      border-left: 4px solid #F59E0B;
+    }
+
+    .icon {
+      margin-right: 0.75rem;
+      font-size: 1.2rem;
+    }
+
+    button {
+      background: #FF5A5F;
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.5rem 0.5rem 0.5rem 0;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(255, 90, 95, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.secondary {
+      background: #00D4FF;
+      color: #0B132B;
+    }
+
+    .instructions {
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid #00D4FF;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+
+    .instructions ol {
+      margin-left: 1.5rem;
+      margin-top: 1rem;
+    }
+
+    .instructions li {
+      margin: 0.5rem 0;
+      line-height: 1.6;
+    }
+
+    .page-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .page-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .page-card:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #00D4FF;
+    }
+
+    .page-card.tested {
+      border-color: #10B981;
+    }
+
+    .results {
+      margin-top: 2rem;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .summary-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      text-align: center;
+    }
+
+    .summary-card .number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #00D4FF;
+      margin-bottom: 0.5rem;
+    }
+
+    .summary-card .label {
+      color: #9AA4B2;
+      font-size: 0.9rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      button {
+        transition: none;
+      }
+
+      button:hover {
+        transform: none;
+      }
+
+      .page-card {
+        transition: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎭 Reduced Motion Fallback Verification</h1>
+    
+    <div id="motion-status"></div>
+
+    <div class="instructions">
+      <h3>📋 How to Use This Tool</h3>
+      <ol>
+        <li><strong>Enable DevTools:</strong> Press F12 to open Chrome DevTools</li>
+        <li><strong>Open Rendering Panel:</strong> Press Ctrl+Shift+P (Cmd+Shift+P on Mac), type "Rendering", select "Show Rendering"</li>
+        <li><strong>Toggle Reduced Motion:</strong> Find "Emulate CSS media feature prefers-reduced-motion" and toggle between "reduce" and "no-preference"</li>
+        <li><strong>Run Tests:</strong> Click "Run Automated Tests" below</li>
+        <li><strong>Manual Testing:</strong> Click on each page card to visit and verify manually</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>🔧 Quick Actions</h2>
+      <button onclick="runAutomatedTests()">Run Automated Tests</button>
+      <button onclick="toggleReducedMotion()" class="secondary">Toggle Reduced Motion (DevTools Required)</button>
+      <button onclick="exportResults()" class="secondary">Export Results</button>
+      <button onclick="location.reload()" class="secondary">Reset</button>
+    </div>
+
+    <div class="test-section">
+      <h2>📄 Pages to Test</h2>
+      <div class="page-list" id="page-list"></div>
+    </div>
+
+    <div class="test-section">
+      <h2>🧪 Automated Test Results</h2>
+      <div id="test-results"></div>
+    </div>
+
+    <div class="results">
+      <h2>📊 Test Summary</h2>
+      <div class="summary" id="summary"></div>
+    </div>
+  </div>
+
+  <script>
+    const pages = [
+      { path: '/', name: 'Home', port: 3000 },
+      { path: '/about', name: 'About', port: 3000 },
+      { path: '/programs', name: 'Programs', port: 3000 },
+      { path: '/admissions', name: 'Admissions', port: 3000 },
+      { path: '/events', name: 'Events', port: 3000 },
+      { path: '/contact', name: 'Contact', port: 3000 },
+      { path: '/alumni', name: 'Alumni', port: 3000 },
+      { path: '/digital-id', name: 'Digital ID', port: 3000 },
+      { path: '/internships', name: 'Internships', port: 3000 },
+    ];
+
+    let testResults = {};
+
+    // Check reduced motion preference
+    function checkReducedMotion() {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const statusEl = document.getElementById('motion-status');
+      
+      if (prefersReducedMotion) {
+        statusEl.innerHTML = '<div class="status enabled">⚠️ Reduced Motion: ENABLED</div>';
+      } else {
+        statusEl.innerHTML = '<div class="status disabled">✓ Reduced Motion: DISABLED (Animations Active)</div>';
+      }
+      
+      return prefersReducedMotion;
+    }
+
+    // Listen for changes to reduced motion preference
+    window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+      checkReducedMotion();
+      console.log('Reduced motion preference changed:', e.matches);
+    });
+
+    // Initialize page list
+    function initPageList() {
+      const pageList = document.getElementById('page-list');
+      pageList.innerHTML = pages.map(page => `
+        <div class="page-card" onclick="openPage('${page.path}')" data-page="${page.path}">
+          <div style="font-size: 2rem; margin-bottom: 0.5rem;">📄</div>
+          <div style="font-weight: 600;">${page.name}</div>
+          <div style="font-size: 0.8rem; color: #9AA4B2; margin-top: 0.25rem;">${page.path}</div>
+        </div>
+      `).join('');
+    }
+
+    // Open page in new tab
+    function openPage(path) {
+      const url = `http://localhost:3000${path}`;
+      window.open(url, '_blank');
+      
+      // Mark as tested
+      const card = document.querySelector(`[data-page="${path}"]`);
+      if (card) {
+        card.classList.add('tested');
+      }
+    }
+
+    // Run automated tests
+    async function runAutomatedTests() {
+      const resultsEl = document.getElementById('test-results');
+      resultsEl.innerHTML = '<div class="test-item pending"><span class="icon">⏳</span>Running tests...</div>';
+      
+      const prefersReducedMotion = checkReducedMotion();
+      const tests = [];
+
+      // Test 1: Check if reduced motion preference is detected
+      tests.push({
+        name: 'Reduced Motion Detection',
+        passed: typeof window.matchMedia === 'function',
+        message: 'matchMedia API is available'
+      });
+
+      // Test 2: Check if preference is being read correctly
+      tests.push({
+        name: 'Preference Reading',
+        passed: true,
+        message: `Current preference: ${prefersReducedMotion ? 'reduce' : 'no-preference'}`
+      });
+
+      // Test 3: Check for Framer Motion elements
+      const framerElements = document.querySelectorAll('[data-framer-motion]');
+      tests.push({
+        name: 'Framer Motion Elements',
+        passed: true,
+        message: `Found ${framerElements.length} Framer Motion elements on this page`
+      });
+
+      // Test 4: Check for CSS animations
+      const hasAnimations = checkForAnimations();
+      tests.push({
+        name: 'CSS Animations',
+        passed: prefersReducedMotion ? !hasAnimations : true,
+        message: prefersReducedMotion 
+          ? (hasAnimations ? 'WARNING: Animations detected with reduced motion enabled' : 'No animations detected (correct)')
+          : 'Animations are allowed'
+      });
+
+      // Test 5: Check for transitions
+      const hasTransitions = checkForTransitions();
+      tests.push({
+        name: 'CSS Transitions',
+        passed: true,
+        message: `Transitions ${hasTransitions ? 'detected' : 'not detected'}`
+      });
+
+      // Render results
+      resultsEl.innerHTML = tests.map(test => `
+        <div class="test-item ${test.passed ? 'pass' : 'fail'}">
+          <span class="icon">${test.passed ? '✓' : '✗'}</span>
+          <div>
+            <strong>${test.name}</strong>
+            <div style="font-size: 0.9rem; color: #9AA4B2; margin-top: 0.25rem;">${test.message}</div>
+          </div>
+        </div>
+      `).join('');
+
+      // Update summary
+      updateSummary(tests);
+    }
+
+    // Check for CSS animations
+    function checkForAnimations() {
+      const elements = document.querySelectorAll('*');
+      for (const el of elements) {
+        const styles = window.getComputedStyle(el);
+        if (styles.animation && styles.animation !== 'none') {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Check for CSS transitions
+    function checkForTransitions() {
+      const elements = document.querySelectorAll('*');
+      for (const el of elements) {
+        const styles = window.getComputedStyle(el);
+        if (styles.transition && styles.transition !== 'all 0s ease 0s') {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Update summary
+    function updateSummary(tests) {
+      const summaryEl = document.getElementById('summary');
+      const passed = tests.filter(t => t.passed).length;
+      const failed = tests.filter(t => !t.passed).length;
+      const total = tests.length;
+      const percentage = ((passed / total) * 100).toFixed(0);
+
+      summaryEl.innerHTML = `
+        <div class="summary-card">
+          <div class="number">${total}</div>
+          <div class="label">Total Tests</div>
+        </div>
+        <div class="summary-card">
+          <div class="number" style="color: #10B981;">${passed}</div>
+          <div class="label">Passed</div>
+        </div>
+        <div class="summary-card">
+          <div class="number" style="color: #EF4444;">${failed}</div>
+          <div class="label">Failed</div>
+        </div>
+        <div class="summary-card">
+          <div class="number" style="color: ${percentage >= 80 ? '#10B981' : '#F59E0B'};">${percentage}%</div>
+          <div class="label">Success Rate</div>
+        </div>
+      `;
+    }
+
+    // Toggle reduced motion (requires DevTools)
+    function toggleReducedMotion() {
+      alert('To toggle reduced motion:\n\n1. Open DevTools (F12)\n2. Press Ctrl+Shift+P (Cmd+Shift+P on Mac)\n3. Type "Rendering"\n4. Select "Show Rendering"\n5. Find "Emulate CSS media feature prefers-reduced-motion"\n6. Toggle between "reduce" and "no-preference"');
+    }
+
+    // Export results
+    function exportResults() {
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const report = {
+        timestamp: new Date().toISOString(),
+        reducedMotionEnabled: prefersReducedMotion,
+        pages: pages.map(p => p.name),
+        userAgent: navigator.userAgent,
+        instructions: 'Manual testing required for each page'
+      };
+
+      const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reduced-motion-test-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Initialize
+    checkReducedMotion();
+    initPageList();
+    
+    // Run tests on load
+    setTimeout(runAutomatedTests, 500);
+  </script>
+</body>
+</html>

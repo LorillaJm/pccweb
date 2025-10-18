@@ -1,0 +1,393 @@
+/**
+ * Accessibility Styles
+ * 
+ * High-contrast focus indicators and accessibility enhancements
+ * Requirements: 6.2, 6.3, 6.5
+ */
+
+/* ============================================
+   KEYBOARD FOCUS INDICATORS
+   ============================================ */
+
+/**
+ * Base focus ring styles with high contrast (3:1 minimum)
+ * Requirement: 6.2, 6.3
+ */
+.focus-ring {
+  outline: none;
+  transition: box-shadow 0.2s ease, outline 0.2s ease;
+}
+
+.focus-ring:focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.3);
+}
+
+/**
+ * Focus ring for light backgrounds
+ */
+.focus-ring-light:focus-visible {
+  outline: 3px solid #0B132B;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(11, 19, 43, 0.2);
+}
+
+/**
+ * Focus ring for dark backgrounds (default)
+ */
+.focus-ring-dark:focus-visible {
+  outline: 3px solid #00D4FF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3);
+}
+
+/**
+ * Focus ring for accent/coral backgrounds
+ */
+.focus-ring-accent:focus-visible {
+  outline: 3px solid #F8FAFC;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(248, 250, 252, 0.4);
+}
+
+/* ============================================
+   INTERACTIVE ELEMENT FOCUS STYLES
+   ============================================ */
+
+/**
+ * Button focus indicators
+ * Requirement: 6.2, 6.3
+ */
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.3);
+}
+
+/**
+ * Link focus indicators
+ * Requirement: 6.2, 6.3
+ */
+a:focus-visible {
+  outline: 3px solid #00D4FF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3);
+  border-radius: 4px;
+}
+
+/**
+ * Input focus indicators
+ * Requirement: 6.2, 6.3
+ */
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.2);
+}
+
+/**
+ * Checkbox and radio focus indicators
+ */
+input[type="checkbox"]:focus-visible,
+input[type="radio"]:focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.3);
+}
+
+/**
+ * Card and interactive container focus
+ */
+[tabindex]:focus-visible {
+  outline: 3px solid #00D4FF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.3);
+  border-radius: 8px;
+}
+
+/* ============================================
+   SKIP LINKS
+   ============================================ */
+
+/**
+ * Skip to main content link
+ * Requirement: 6.5
+ */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 0;
+  background: #FF5A5F;
+  color: #F8FAFC;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  font-weight: 600;
+  z-index: 100000;
+  border-radius: 0 0 8px 0;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 0;
+  outline: 3px solid #F8FAFC;
+  outline-offset: -3px;
+}
+
+/* ============================================
+   HIGH CONTRAST MODE SUPPORT
+   ============================================ */
+
+/**
+ * Enhanced contrast for high contrast mode
+ * Requirement: 6.3
+ */
+@media (prefers-contrast: high) {
+  /* Increase outline width for better visibility */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    outline-width: 4px;
+    outline-offset: 3px;
+  }
+  
+  /* Ensure all interactive elements have visible borders */
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    border: 2px solid currentColor;
+  }
+  
+  /* Increase text contrast */
+  body {
+    color: #000000;
+    background: #FFFFFF;
+  }
+  
+  .dark body {
+    color: #FFFFFF;
+    background: #000000;
+  }
+}
+
+/* ============================================
+   REDUCED MOTION SUPPORT
+   ============================================ */
+
+/**
+ * Disable animations for users who prefer reduced motion
+ * Requirement: 6.1, 6.4
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  /* Keep focus indicators visible but instant */
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  [tabindex]:focus-visible {
+    transition: none;
+  }
+}
+
+/* ============================================
+   KEYBOARD NAVIGATION HELPERS
+   ============================================ */
+
+/**
+ * Visual indicator for keyboard navigation mode
+ * Requirement: 6.5
+ */
+body.keyboard-navigation *:focus {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 2px;
+}
+
+/**
+ * Hide focus indicators for mouse users
+ */
+body:not(.keyboard-navigation) *:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ============================================
+   SCREEN READER ONLY CONTENT
+   ============================================ */
+
+/**
+ * Screen reader only text
+ * Requirement: 6.6
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/**
+ * Screen reader only text that becomes visible on focus
+ */
+.sr-only-focusable:focus {
+  position: static;
+  width: auto;
+  height: auto;
+  padding: inherit;
+  margin: inherit;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* ============================================
+   TOUCH TARGET SIZES
+   ============================================ */
+
+/**
+ * Ensure minimum touch target size (44x44px)
+ * Requirement: 6.5
+ */
+button,
+a,
+input[type="checkbox"],
+input[type="radio"],
+[role="button"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Exception for inline links */
+p a,
+li a {
+  min-height: auto;
+  min-width: auto;
+}
+
+/* ============================================
+   FOCUS TRAP UTILITIES
+   ============================================ */
+
+/**
+ * Focus trap for modals and dialogs
+ */
+.focus-trap {
+  position: relative;
+}
+
+.focus-trap-boundary {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   ARIA LIVE REGIONS
+   ============================================ */
+
+/**
+ * Visually hidden live regions for screen readers
+ * Requirement: 6.6
+ */
+[aria-live] {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+[aria-live][data-visible="true"] {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+}
+
+/* ============================================
+   CUSTOM FOCUS STYLES FOR PREMIUM COMPONENTS
+   ============================================ */
+
+/**
+ * Premium button focus
+ */
+.premium-button:focus-visible {
+  outline: 3px solid #F8FAFC;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(255, 90, 95, 0.4);
+}
+
+/**
+ * Premium card focus
+ */
+.premium-card:focus-visible {
+  outline: 3px solid #00D4FF;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(0, 212, 255, 0.3);
+}
+
+/**
+ * Premium input focus
+ */
+.premium-input:focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 0;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.3);
+}
+
+/* ============================================
+   FOCUS VISIBLE POLYFILL
+   ============================================ */
+
+/**
+ * Fallback for browsers that don't support :focus-visible
+ */
+.js-focus-visible :focus:not(.focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+
+.js-focus-visible .focus-visible {
+  outline: 3px solid #FF5A5F;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(255, 90, 95, 0.3);
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+/**
+ * Remove focus indicators in print
+ */
+@media print {
+  *:focus,
+  *:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+}

@@ -88,6 +88,7 @@ export function PremiumCard({
       variants={cardVariants}
       initial="rest"
       whileHover={disableHover ? undefined : "hover"}
+      whileFocus={disableHover ? undefined : "hover"}
       transition={{ 
         duration: 0.25, 
         ease: 'easeOut',
@@ -100,7 +101,7 @@ export function PremiumCard({
         // Use will-change for performance optimization
         willChange: 'transform, box-shadow, border-radius',
       }}
-      className={className}
+      className={`focus-ring premium-card ${className}`}
       {...motionProps}
     >
       {children}

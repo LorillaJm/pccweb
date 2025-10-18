@@ -31,6 +31,21 @@ const userSchema = new mongoose.Schema({
     default: '',
     trim: true
   },
+  middleName: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  phone: {
+    type: String,
+    default: null,
+    trim: true
+  },
+  address: {
+    type: String,
+    default: null,
+    trim: true
+  },
   role: {
     type: String,
     enum: ['student', 'faculty', 'admin', 'super_admin', 'alumni', 'company'],

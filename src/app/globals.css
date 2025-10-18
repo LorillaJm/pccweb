@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/futuristic-design-system.css";
+@import "../styles/accessibility.css";
 
 :root {
   --background: #ffffff;

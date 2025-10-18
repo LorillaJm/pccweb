@@ -12,7 +12,7 @@ import { PortalLayout } from '@/components/PortalLayout';
 import type { StudentProfile } from '@/lib/api';
 
 export default function StudentProfilePage() {
-    const { user, profile: studentProfile } = useAuth();
+    const { user, profile: studentProfile, refetchUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -51,20 +51,31 @@ export default function StudentProfilePage() {
         setLoading(true);
         setSuccess(false);
         try {
-            const response = await fetch('/api/student/profile', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(profile),
-                credentials: 'include'
+            const { api } = await import('@/lib/api');
+            
+            // Update all profile info in one call
+            const response = await api.put('/auth/profile', {
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                middleName: profile.middleName,
+                phone: profile.phone,
+                address: profile.address,
+                program: profile.program,
+                yearLevel: profile.yearLevel ? parseInt(profile.yearLevel) : undefined
             });
 
-            if (response.ok) {
-                setIsEditing(false);
-                setSuccess(true);
-                setTimeout(() => setSuccess(false), 3000);
-            }
-        } catch (error) {
+            console.log('Profile update response:', response.data);
+
+            setIsEditing(false);
+            setSuccess(true);
+            
+            // Refetch user data from the server
+            await refetchUser();
+            
+            setTimeout(() => setSuccess(false), 3000);
+        } catch (error: any) {
             console.error('Error updating profile:', error);
+            alert(error.response?.data?.message || 'Failed to update profile. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -81,9 +92,17 @@ export default function StudentProfilePage() {
                     <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 h-32 relative">
                         <div className="absolute -bottom-16 left-8">
                             <div className="w-32 h-32 rounded-full bg-white shadow-2xl flex items-center justify-center border-4 border-white">
-                                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-4xl font-bold">
-                                    {initials}
-                                </div>
+                                {user?.profilePicture ? (
+                                    <img
+                                        src={user.profilePicture}
+                                        alt={fullName}
+                                        className="w-28 h-28 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-4xl font-bold">
+                                        {initials}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

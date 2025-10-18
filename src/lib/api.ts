@@ -35,14 +35,17 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Log detailed error information for debugging
+    // Log detailed error information for debugging (except expected 401s)
     if (error.response) {
-      console.log('API Error Response:', {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        data: error.response.data,
-        url: error.config?.url
-      });
+      // Don't log 401 errors as they're expected when not authenticated
+      if (error.response.status !== 401) {
+        console.log('API Error Response:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          url: error.config?.url
+        });
+      }
     } else if (error.request) {
       console.log('API Network Error:', {
         message: error.message,

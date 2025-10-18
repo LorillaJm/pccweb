@@ -10,17 +10,25 @@ import { format } from 'date-fns';
 import Link from 'next/link';
 
 export default function FacultyDashboard() {
-  const { user, profile } = useAuth();
+  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [assignedSubjects, setAssignedSubjects] = useState<ClassSection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!authLoading && isAuthenticated) {
+      fetchDashboardData();
+    }
+  }, [authLoading, isAuthenticated]);
 
   const fetchDashboardData = async () => {
+    // Don't fetch if not authenticated
+    if (!isAuthenticated) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       

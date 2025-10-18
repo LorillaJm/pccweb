@@ -89,7 +89,7 @@ export function PremiumButton({
     rounded-lg
     transition-colors duration-200
     disabled:opacity-50 disabled:cursor-not-allowed
-    focus:outline-none focus:ring-4 focus:ring-accent/50
+    focus-ring premium-button
     ${sizeClasses[size]}
     ${variantClasses[variant]}
     ${className}

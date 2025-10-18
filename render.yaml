@@ -8,6 +8,7 @@ services:
     startCommand: npm start
     plan: free
     healthCheckPath: /api/health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -22,4 +23,10 @@ services:
       - key: REDIS_URL
         sync: false
       - key: FRONTEND_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
         sync: false

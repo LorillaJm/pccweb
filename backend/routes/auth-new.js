@@ -468,6 +468,21 @@ const authenticateUser = async (req, res, next) => {
   return res.status(401).json({ message: 'Not authenticated' });
 };
 
+// Test session endpoint (for debugging)
+router.get('/session-test', (req, res) => {
+  res.json({
+    hasSession: !!req.session,
+    sessionID: req.sessionID,
+    isAuthenticated: req.isAuthenticated ? req.isAuthenticated() : false,
+    hasUser: !!req.user,
+    user: req.user ? {
+      id: req.user._id,
+      email: req.user.email,
+      role: req.user.role
+    } : null
+  });
+});
+
 // Get current user profile (supports both session and JWT)
 router.get('/me', authenticateUser, async (req, res, next) => {
   try {
@@ -654,6 +669,9 @@ router.get('/profile', async (req, res, next) => {
 router.put('/profile', [
   body('firstName').optional().trim().isLength({ min: 1 }),
   body('lastName').optional().trim().isLength({ min: 1 }),
+  body('middleName').optional().trim(),
+  body('phone').optional().trim(),
+  body('address').optional().trim(),
   body('studentId').optional().trim(),
   body('program').optional().trim(),
   body('yearLevel').optional().isInt({ min: 1, max: 6 }),
@@ -692,8 +710,9 @@ router.put('/profile', [
 
     // Update allowed fields
     const allowedFields = [
-      'firstName', 'lastName', 'studentId', 'program',
-      'yearLevel', 'section', 'employeeId', 'department', 'position'
+      'firstName', 'lastName', 'middleName', 'phone', 'address',
+      'studentId', 'program', 'yearLevel', 'section', 
+      'employeeId', 'department', 'position'
     ];
 
     allowedFields.forEach(field => {
