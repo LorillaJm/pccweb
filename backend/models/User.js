@@ -116,6 +116,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  emailVerifiedAt: {
+    type: Date,
+    default: null
+  },
   emailVerificationToken: {
     type: String,
     default: null
@@ -125,6 +129,24 @@ const userSchema = new mongoose.Schema({
     default: null
   },
   passwordResetExpires: {
+    type: Date,
+    default: null
+  },
+  // Two-Factor Authentication
+  twoFactorEnabled: {
+    type: Boolean,
+    default: false
+  },
+  // Account Security
+  accountLocked: {
+    type: Boolean,
+    default: false
+  },
+  lockReason: {
+    type: String,
+    default: null
+  },
+  lockedUntil: {
     type: Date,
     default: null
   }

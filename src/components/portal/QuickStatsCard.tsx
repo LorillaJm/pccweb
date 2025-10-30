@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { LucideIcon, TrendingUp } from 'lucide-react';
+import { timing, easing, hoverLift, hoverScale } from '@/lib/animations';
 
 interface QuickStatsCardProps {
   title: string;
@@ -25,8 +26,14 @@ export function QuickStatsCard({
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, type: 'spring', stiffness: 200 }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative"
+      whileHover={{ 
+        y: hoverLift.prominent, 
+        scale: hoverScale.subtle,
+        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.15)",
+        transition: { duration: timing.fast, ease: easing.smooth } 
+      }}
+      whileTap={{ scale: 0.97 }}
+      className="group relative cursor-pointer"
     >
       {/* Main Card */}
       <div className="relative bg-white rounded-xl p-4 shadow-sm border border-gray-200 overflow-hidden transition-all duration-300 group-hover:shadow-md group-hover:border-gray-300">
@@ -79,18 +86,31 @@ export function QuickStatsCard({
         <div className="relative">
           {/* Icon and Trend Row */}
           <div className="flex items-center justify-between mb-2">
-            <div className={`p-2 bg-gradient-to-br ${gradient} rounded-lg`}>
+            <motion.div 
+              className={`p-2 bg-gradient-to-br ${gradient} rounded-lg`}
+              whileHover={{ 
+                rotate: 360, 
+                scale: 1.1,
+                transition: { duration: timing.slow, ease: easing.smooth }
+              }}
+            >
               <Icon className="h-4 w-4 text-white" />
-            </div>
+            </motion.div>
             
             {/* Trend Indicator */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: delay + 0.2 }}
+              whileHover={{ scale: 1.05 }}
               className="flex items-center gap-0.5 px-1.5 py-0.5 bg-green-50 rounded-md"
             >
-              <TrendingUp className="h-2.5 w-2.5 text-green-600" />
+              <motion.div
+                animate={{ y: [0, -2, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: easing.smooth }}
+              >
+                <TrendingUp className="h-2.5 w-2.5 text-green-600" />
+              </motion.div>
               <span className="text-[10px] font-semibold text-green-600">+12%</span>
             </motion.div>
           </div>

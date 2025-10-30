@@ -3,312 +3,300 @@
 import { useEffect, useState } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { PortalLayout } from '@/components/PortalLayout';
-import { subjectsApi, materialsApi, ClassSection, ClassMaterial } from '@/lib/api';
-import { BookOpen, Users, Clock, MapPin, FileText, Download, Calendar } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { subjectsApi, ClassSection } from '@/lib/api';
+import { BookOpen, Clock, Users, MapPin, Award, Filter, Search, Grid3x3, List } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CourseCard } from '@/components/portal/CourseCard';
+import { staggerContainer, staggerItem, timing, easing } from '@/lib/animations';
 
-export default function StudentSubjects() {
-  const [enrolledSubjects, setEnrolledSubjects] = useState<ClassSection[]>([]);
-  const [availableSubjects, setAvailableSubjects] = useState<ClassSection[]>([]);
-  const [selectedSection, setSelectedSection] = useState<ClassSection | null>(null);
-  const [sectionMaterials, setSectionMaterials] = useState<ClassMaterial[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingMaterials, setIsLoadingMaterials] = useState(false);
-  const [activeTab, setActiveTab] = useState<'enrolled' | 'available'>('enrolled');
+type TabType = 'ongoing' | 'completed' | 'archived';
+type ViewType = 'grid' | 'list';
+
+export default function SubjectsPage() {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [subjects, setSubjects] = useState<ClassSection[]>([]);
+  const [filteredSubjects, setFilteredSubjects] = useState<ClassSection[]>([]);
+  const [isLoadingSubjects, setIsLoadingSubjects] = useState(true);
   const [error, setError] = useState('');
+  
+  // Filters and view state
+  const [activeTab, setActiveTab] = useState<TabType>('ongoing');
+  const [viewType, setViewType] = useState<ViewType>('grid');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState<number | 'all'>('all');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
 
   useEffect(() => {
-    fetchSubjects();
-  }, []);
+    if (!isLoading && isAuthenticated) {
+      fetchSubjects();
+    }
+  }, [isLoading, isAuthenticated]);
+
+  useEffect(() => {
+    filterSubjects();
+  }, [subjects, activeTab, searchQuery, selectedSemester, selectedDepartment]);
 
   const fetchSubjects = async () => {
     try {
-      setIsLoading(true);
+      setIsLoadingSubjects(true);
+      const response = await subjectsApi.getEnrolledSubjects();
       
-      // Fetch enrolled subjects
-      const enrolledResponse = await subjectsApi.getEnrolledSubjects();
-      if (enrolledResponse.success) {
-        setEnrolledSubjects(enrolledResponse.data.enrolledSubjects);
+      if (response.success) {
+        setSubjects(response.data.enrolledSubjects);
       }
-
-      // Fetch available subjects
-      const availableResponse = await subjectsApi.getAvailableSubjects();
-      if (availableResponse.success) {
-        setAvailableSubjects(availableResponse.data.subjects);
-      }
-
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch subjects:', error);
       setError('Failed to load subjects. Please try again later.');
     } finally {
-      setIsLoading(false);
+      setIsLoadingSubjects(false);
     }
   };
 
-  const fetchSectionMaterials = async (sectionId: number) => {
-    try {
-      setIsLoadingMaterials(true);
-      const response = await materialsApi.getSectionMaterials(sectionId);
-      if (response.success) {
-        setSectionMaterials(response.data.materials);
-      }
-    } catch (error) {
-      console.error('Failed to fetch materials:', error);
-    } finally {
-      setIsLoadingMaterials(false);
+  const filterSubjects = () => {
+    let filtered = [...subjects];
+
+    // Filter by search query
+    if (searchQuery) {
+      filtered = filtered.filter(subject =>
+        subject.subjectCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        subject.subjectName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        subject.facultyName?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
     }
-  };
 
-  const handleSubjectClick = (subject: ClassSection) => {
-    setSelectedSection(subject);
-    fetchSectionMaterials(subject.sectionId);
-  };
-
-  const handleDownloadMaterial = async (materialId: number, fileName: string) => {
-    try {
-      const blob = await materialsApi.downloadMaterial(materialId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Download failed:', error);
+    // Filter by semester
+    if (selectedSemester !== 'all') {
+      filtered = filtered.filter(subject => subject.semester === selectedSemester);
     }
+
+    // Filter by department (extracted from subject code)
+    if (selectedDepartment !== 'all') {
+      filtered = filtered.filter(subject =>
+        subject.subjectCode.startsWith(selectedDepartment)
+      );
+    }
+
+    // Filter by tab (for now, all are ongoing - you can add status field later)
+    // This is a placeholder for future implementation
+    if (activeTab === 'completed') {
+      filtered = []; // No completed courses yet
+    } else if (activeTab === 'archived') {
+      filtered = []; // No archived courses yet
+    }
+
+    setFilteredSubjects(filtered);
   };
 
-  const renderSubjectCard = (subject: ClassSection) => (
-    <div 
-      key={subject.sectionId}
-      onClick={() => handleSubjectClick(subject)}
-      className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer border-l-4 border-blue-500"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {subject.subjectCode} - {subject.subjectName}
-          </h3>
-          
-          {subject.description && (
-            <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-              {subject.description}
-            </p>
-          )}
-          
-          <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-            <div className="flex items-center">
-              <Users className="h-4 w-4 mr-1" />
-              <span>{subject.facultyName || 'TBA'}</span>
-            </div>
-            
-            <div className="flex items-center">
-              <Clock className="h-4 w-4 mr-1" />
-              <span>{subject.schedule || 'Schedule TBA'}</span>
-            </div>
-            
-            {subject.room && (
-              <div className="flex items-center">
-                <MapPin className="h-4 w-4 mr-1" />
-                <span>{subject.room}</span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center space-x-4 text-sm">
-              <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                {subject.units} {subject.units === 1 ? 'unit' : 'units'}
-              </span>
-              
-              <span className="text-gray-500">
-                Section: {subject.sectionName}
-              </span>
-            </div>
-            
-            {subject.materialCount && subject.materialCount > 0 && (
-              <div className="flex items-center text-green-600 text-sm">
-                <FileText className="h-4 w-4 mr-1" />
-                <span>{subject.materialCount} materials</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  const departments = Array.from(new Set(subjects.map(s => s.subjectCode.substring(0, 2))));
+  const semesters = Array.from(new Set(subjects.map(s => s.semester))).sort();
+
+  const tabs: { id: TabType; label: string; count: number }[] = [
+    { id: 'ongoing', label: 'Ongoing', count: subjects.length },
+    { id: 'completed', label: 'Completed', count: 0 },
+    { id: 'archived', label: 'Archived', count: 0 },
+  ];
 
   return (
     <ProtectedRoute requiredRole="student">
-      <PortalLayout title="My Subjects">
-        <div className="space-y-6">
-          {/* Tab Navigation */}
-          <div className="bg-white rounded-lg shadow-md">
-            <div className="border-b border-gray-200">
-              <nav className="-mb-px flex space-x-8 px-6">
-                <button
-                  onClick={() => setActiveTab('enrolled')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'enrolled'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
+      <PortalLayout>
+        <div className="space-y-6 mt-4">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+          >
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <motion.div
+                  whileHover={{ rotate: 360, scale: 1.1 }}
+                  transition={{ duration: timing.slow, ease: easing.smooth }}
+                  className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center"
                 >
-                  Enrolled Subjects ({enrolledSubjects.length})
-                </button>
-                <button
-                  onClick={() => setActiveTab('available')}
-                  className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === 'available'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Available Subjects ({availableSubjects.length})
-                </button>
-              </nav>
+                  <BookOpen className="h-6 w-6 text-white" />
+                </motion.div>
+                My Classes
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage your enrolled courses and track your progress
+              </p>
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            {/* View Toggle */}
+            <div className="flex items-center gap-2 bg-white rounded-xl p-1 shadow-sm border border-gray-200">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewType('grid')}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewType === 'grid'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Grid3x3 className="h-5 w-5" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setViewType('list')}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewType === 'list'
+                    ? 'bg-blue-500 text-white'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <List className="h-5 w-5" />
+              </motion.button>
+            </div>
+          </motion.div>
+
+          {/* Tabs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white rounded-2xl shadow-sm border border-gray-200 p-2"
+          >
+            <div className="flex gap-2">
+              {tabs.map((tab) => (
+                <motion.button
+                  key={tab.id}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 px-6 py-3 rounded-xl font-semibold transition-all ${
+                    activeTab === tab.id
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {tab.label}
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs ${
+                    activeTab === tab.id
+                      ? 'bg-white/20'
+                      : 'bg-gray-200'
+                  }`}>
+                    {tab.count}
+                  </span>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Filters */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Search */}
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search courses, instructors..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Semester Filter */}
+              <div>
+                <select
+                  value={selectedSemester}
+                  onChange={(e) => setSelectedSemester(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="all">All Semesters</option>
+                  {semesters.map(sem => (
+                    <option key={sem} value={sem}>Semester {sem}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Department Filter */}
+              <div>
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                >
+                  <option value="all">All Departments</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Content */}
+          {isLoadingSubjects ? (
+            <div className="text-center py-20">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"
+              />
+              <p className="mt-4 text-gray-600">Loading your courses...</p>
+            </div>
+          ) : error ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center"
+            >
               <p className="text-red-600">{error}</p>
-            </div>
+            </motion.div>
+          ) : filteredSubjects.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-gray-50 border border-gray-200 rounded-2xl p-12 text-center"
+            >
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity, ease: easing.smooth }}
+              >
+                <BookOpen className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+              </motion.div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
+              <p className="text-gray-600">
+                {searchQuery || selectedSemester !== 'all' || selectedDepartment !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'You are not enrolled in any courses yet'}
+              </p>
+            </motion.div>
+          ) : (
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className={
+                viewType === 'grid'
+                  ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                  : 'space-y-4'
+              }
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredSubjects.map((subject, index) => (
+                  <CourseCard
+                    key={subject.sectionId}
+                    subject={subject}
+                    viewType={viewType}
+                    index={index}
+                  />
+                ))}
+              </AnimatePresence>
+            </motion.div>
           )}
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Subjects List */}
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-gray-600">Loading subjects...</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {activeTab === 'enrolled' ? (
-                    enrolledSubjects.length > 0 ? (
-                      enrolledSubjects.map(renderSubjectCard)
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>You are not enrolled in any subjects yet.</p>
-                      </div>
-                    )
-                  ) : (
-                    availableSubjects.length > 0 ? (
-                      availableSubjects.map(renderSubjectCard)
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                        <p>No available subjects for your current level.</p>
-                      </div>
-                    )
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Subject Details & Materials */}
-            <div className="lg:sticky lg:top-8">
-              {selectedSection ? (
-                <div className="bg-white rounded-lg shadow-md">
-                  <div className="p-6 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {selectedSection.subjectCode} - {selectedSection.subjectName}
-                    </h3>
-                    <p className="text-gray-600 mt-1">Section {selectedSection.sectionName}</p>
-                  </div>
-                  
-                  <div className="p-6">
-                    <h4 className="text-md font-medium text-gray-900 mb-4">Course Materials</h4>
-                    
-                    {isLoadingMaterials ? (
-                      <div className="text-center py-4">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-600">Loading materials...</p>
-                      </div>
-                    ) : sectionMaterials.length > 0 ? (
-                      <div className="space-y-3">
-                        {sectionMaterials.map((material) => (
-                          <div 
-                            key={material.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                          >
-                            <div className="flex items-center flex-1 min-w-0">
-                              <div className="bg-blue-100 p-2 rounded mr-3">
-                                <FileText className="h-4 w-4 text-blue-600" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h5 className="text-sm font-medium text-gray-900 truncate">
-                                  {material.title}
-                                </h5>
-                                {material.description && (
-                                  <p className="text-xs text-gray-500 truncate">
-                                    {material.description}
-                                  </p>
-                                )}
-                                <div className="flex items-center mt-1 text-xs text-gray-400">
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  <span>
-                                    {new Date(material.createdAt).toLocaleDateString()}
-                                  </span>
-                                  {material.dueDate && (
-                                    <>
-                                      <span className="mx-2">•</span>
-                                      <span className="text-red-600">
-                                        Due: {new Date(material.dueDate).toLocaleDateString()}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {material.filePath && (
-                              <button
-                                onClick={() => handleDownloadMaterial(material.id, material.fileName || material.title)}
-                                className="ml-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Download"
-                              >
-                                <Download className="h-4 w-4" />
-                              </button>
-                            )}
-                            
-                            {material.externalUrl && (
-                              <a
-                                href={material.externalUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="ml-2 p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                title="Open Link"
-                              >
-                                <FileText className="h-4 w-4" />
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-gray-500">
-                        <FileText className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                        <p className="text-sm">No materials available yet</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-white rounded-lg shadow-md p-6">
-                  <div className="text-center py-8 text-gray-500">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>Select a subject to view details and materials</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </PortalLayout>
     </ProtectedRoute>

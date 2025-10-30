@@ -5,186 +5,324 @@ const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
 const { validateSession } = require('../middleware/sessionValidator');
+const EmailVerificationService = require('../services/EmailVerificationService');
+const EmailValidationService = require('../services/EmailValidationService');
+const NotificationService = require('../services/NotificationService');
+const JWTTokenService = require('../services/JWTTokenService');
+const TwoFactorService = require('../services/TwoFactorService');
+const AuditLog = require('../models/AuditLog');
+const { rateLimitRegistration, rateLimitVerification, rateLimitResendEmail, rateLimitLogin, rateLimitTwoFactor } = require('../middleware/rateLimit');
+const { verifyRecaptcha } = require('../middleware/recaptcha');
 
 const router = express.Router();
 
-// Generate JWT tokens
-const generateTokens = (userId, email, role) => {
-  const payload = { userId, email, role };
-
-  const accessToken = jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '24h'
-  });
-
-  const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_REFRESH_EXPIRE || '7d'
-  });
-
-  return { accessToken, refreshToken };
+// Generate JWT tokens (wrapper for JWTTokenService)
+const generateTokens = async (userId, email, role) => {
+  return await JWTTokenService.generateTokens(userId, email, role);
 };
 
 // Register new user
-router.post('/register', [
-  body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('firstName').trim().isLength({ min: 1 }).withMessage('First name is required'),
-  body('lastName').trim().isLength({ min: 1 }).withMessage('Last name is required'),
-  body('role').isIn(['student', 'faculty']).withMessage('Role must be student or faculty'),
-  body('studentId').optional().trim(),
-  body('employeeId').optional().trim()
-], async (req, res, next) => {
-  try {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
+router.post('/register',
+  rateLimitRegistration,
+  verifyRecaptcha,
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password')
+      .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage('Password must contain uppercase, lowercase, and number'),
+    body('firstName').trim().isLength({ min: 1 }).withMessage('First name is required'),
+    body('lastName').trim().isLength({ min: 1 }).withMessage('Last name is required'),
+    body('role').isIn(['student', 'faculty']).withMessage('Role must be student or faculty'),
+    body('studentId').optional().trim(),
+    body('employeeId').optional().trim()
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      // Validate input
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        // Log failed registration attempt
+        await AuditLog.create({
+          action: 'registration_failed',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'validation_error', errors: errors.array() }
+        });
+
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const {
+        email,
+        password,
+        firstName,
+        lastName,
+        role,
+        studentId,
+        employeeId,
+        program,
+        yearLevel,
+        section,
+        department,
+        position
+      } = req.body;
+
+      // Validate email with comprehensive checks
+      const emailValidation = await EmailValidationService.validateEmail(email, {
+        checkMX: false, // Skip MX check for performance
+        allowDisposable: false
       });
-    }
 
-    const {
-      email,
-      password,
-      firstName,
-      lastName,
-      role,
-      studentId,
-      employeeId,
-      program,
-      yearLevel,
-      section,
-      department,
-      position
-    } = req.body;
+      if (!emailValidation.valid) {
+        await AuditLog.create({
+          action: 'registration_failed',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: emailValidation.reason, email }
+        });
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [
-        { email },
-        ...(studentId ? [{ studentId }] : []),
-        ...(employeeId ? [{ employeeId }] : [])
-      ]
-    });
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: emailValidation.reason.toUpperCase(),
+            message: emailValidation.message
+          }
+        });
+      }
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists with this email, student ID, or employee ID'
+      // Use normalized email
+      const normalizedEmail = emailValidation.normalizedEmail;
+
+      // Check if user already exists
+      const existingUser = await User.findOne({
+        $or: [
+          { email: normalizedEmail },
+          ...(studentId ? [{ studentId }] : []),
+          ...(employeeId ? [{ employeeId }] : [])
+        ]
       });
-    }
 
-    // Create user data
-    const userData = {
-      email,
-      password,
-      firstName,
-      lastName,
-      role,
-      authProvider: 'local'
-    };
+      if (existingUser) {
+        await AuditLog.create({
+          action: 'registration_failed',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'user_exists', email: normalizedEmail }
+        });
 
-    // Add role-specific fields
-    if (role === 'student') {
-      if (studentId) userData.studentId = studentId;
-      if (program) userData.program = program;
-      if (yearLevel) userData.yearLevel = yearLevel;
-      if (section) userData.section = section;
-    } else if (role === 'faculty') {
-      if (employeeId) userData.employeeId = employeeId;
-      if (department) userData.department = department;
-      if (position) userData.position = position;
-    }
+        return res.status(400).json({
+          success: false,
+          message: 'User already exists with this email, student ID, or employee ID'
+        });
+      }
 
-    // Create user
-    const newUser = await User.create(userData);
+      // Create user data
+      const userData = {
+        email: normalizedEmail,
+        password,
+        firstName,
+        lastName,
+        role,
+        authProvider: 'local',
+        emailVerified: false // Set to false for email verification
+      };
 
-    // Generate tokens
-    const { accessToken, refreshToken } = generateTokens(newUser._id, newUser.email, newUser.role);
+      // Add role-specific fields
+      if (role === 'student') {
+        if (studentId) userData.studentId = studentId;
+        if (program) userData.program = program;
+        if (yearLevel) userData.yearLevel = yearLevel;
+        if (section) userData.section = section;
+      } else if (role === 'faculty') {
+        if (employeeId) userData.employeeId = employeeId;
+        if (department) userData.department = department;
+        if (position) userData.position = position;
+      }
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: {
-          id: newUser._id,
-          email: newUser.email,
-          role: newUser.role,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          createdAt: newUser.createdAt
-        },
-        tokens: {
-          accessToken,
-          refreshToken
+      // Create user
+      const newUser = await User.create(userData);
+
+      // Generate verification token and OTP
+      const { token, otp } = await EmailVerificationService.generateVerificationToken(
+        newUser._id,
+        normalizedEmail,
+        'registration'
+      );
+
+      // Send verification email via NotificationService
+      try {
+        const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const verificationLink = `${frontendURL}/auth/verify?token=${token}`;
+
+        await NotificationService.sendNotification({
+          userId: newUser._id,
+          type: 'email',
+          category: 'system',
+          priority: 'high',
+          title: 'Verify Your Email - PCC Portal',
+          message: `Hi ${firstName},\n\nWelcome to PCC Portal! Please verify your email address to complete your registration.\n\nMethod 1: Click the link below\n${verificationLink}\n\nMethod 2: Enter this code manually\nVerification Code: ${otp}\n\nThis link and code will expire in 24 hours.\n\nIf you didn't create an account, please ignore this email.`,
+          metadata: {
+            verificationLink,
+            otp,
+            expiresIn: '24 hours'
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Don't fail registration if email fails
+      }
+
+      // Log successful registration
+      await AuditLog.create({
+        userId: newUser._id,
+        action: 'registration_success',
+        category: 'auth',
+        status: 'success',
+        ipAddress,
+        userAgent,
+        metadata: {
+          email: normalizedEmail,
+          role,
+          authProvider: 'local'
         }
-      }
-    });
+      });
 
-  } catch (error) {
-    next(error);
+      // Don't generate tokens yet - user needs to verify email first
+      res.status(201).json({
+        success: true,
+        message: 'Registration successful! Please check your email to verify your account.',
+        data: {
+          user: {
+            id: newUser._id,
+            email: newUser.email,
+            role: newUser.role,
+            firstName: newUser.firstName,
+            lastName: newUser.lastName,
+            emailVerified: false,
+            createdAt: newUser.createdAt
+          },
+          requiresVerification: true
+        }
+      });
+
+    } catch (error) {
+      // Log error
+      await AuditLog.create({
+        action: 'registration_error',
+        category: 'auth',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
   }
-});
+);
 
-// Login user (Session-based)
-router.post('/login', [
-  body('email').isEmail().normalizeEmail(),
-  body('password').exists().withMessage('Password is required')
-], async (req, res, next) => {
-  try {
-    // Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array()
-      });
-    }
+// Verify email with token or OTP
+router.post('/verify',
+  rateLimitVerification,
+  [
+    body('token').optional().trim(),
+    body('email').optional().isEmail().normalizeEmail(),
+    body('otp').optional().trim().isLength({ min: 6, max: 6 })
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
 
-    const { email, password } = req.body;
-
-    // Find user
-    const user = await User.findOne({ email: email.toLowerCase() });
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated. Please contact administration.'
-      });
-    }
-
-    // Verify password
-    const isValidPassword = await user.comparePassword(password);
-
-    if (!isValidPassword) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
-
-    // Create session using Passport
-    req.login(user, (err) => {
-      if (err) {
-        return next(err);
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
       }
+
+      const { token, email, otp } = req.body;
+
+      let result;
+
+      // Verify using token (from email link)
+      if (token) {
+        result = await EmailVerificationService.verifyToken(token, ipAddress, userAgent);
+      }
+      // Verify using OTP (manual entry)
+      else if (email && otp) {
+        result = await EmailVerificationService.verifyOTP(email, otp, ipAddress, userAgent);
+      }
+      else {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'MISSING_PARAMETERS',
+            message: 'Either token or email+otp is required'
+          }
+        });
+      }
+
+      // Log verification attempt
+      await AuditLog.create({
+        userId: result.userId || null,
+        action: 'email_verification',
+        category: 'verification',
+        status: result.success ? 'success' : 'failure',
+        ipAddress,
+        userAgent,
+        metadata: {
+          method: token ? 'token' : 'otp',
+          reason: result.message,
+          expired: result.expired
+        }
+      });
+
+      if (!result.success) {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: result.expired ? 'EXPIRED_TOKEN' : 'INVALID_TOKEN',
+            message: result.message,
+            expired: result.expired
+          }
+        });
+      }
+
+      // Get user details
+      const user = await User.findById(result.userId);
+
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: 'USER_NOT_FOUND',
+            message: 'User not found'
+          }
+        });
+      }
+
+      // Generate tokens for the verified user
+      const { accessToken, refreshToken } = generateTokens(user._id, user.email, user.role);
 
       res.json({
         success: true,
-        message: 'Login successful',
+        message: 'Email verified successfully!',
         data: {
           user: {
             id: user._id,
@@ -192,15 +330,373 @@ router.post('/login', [
             role: user.role,
             firstName: user.firstName,
             lastName: user.lastName,
-            authProvider: user.authProvider,
-            profilePicture: user.profilePicture
+            emailVerified: true,
+            emailVerifiedAt: user.emailVerifiedAt
+          },
+          tokens: {
+            accessToken,
+            refreshToken
           }
         }
       });
-    });
 
-  } catch (error) {
-    next(error);
+    } catch (error) {
+      await AuditLog.create({
+        action: 'email_verification_error',
+        category: 'verification',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
+  }
+);
+
+// Resend verification email
+router.post('/resend-verification',
+  rateLimitResendEmail,
+  [
+    body('email').isEmail().normalizeEmail()
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { email } = req.body;
+      const normalizedEmail = email.toLowerCase().trim();
+
+      // Find user by email
+      const user = await User.findOne({ email: normalizedEmail });
+
+      if (!user) {
+        // Don't reveal if user exists or not for security
+        return res.json({
+          success: true,
+          message: 'If an account exists with this email, a verification email has been sent.'
+        });
+      }
+
+      // Check if already verified
+      if (user.emailVerified) {
+        await AuditLog.create({
+          userId: user._id,
+          action: 'resend_verification_failed',
+          category: 'verification',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'already_verified', email: normalizedEmail }
+        });
+
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'ALREADY_VERIFIED',
+            message: 'Email is already verified'
+          }
+        });
+      }
+
+      // Resend verification
+      const { token, otp } = await EmailVerificationService.resendVerification(user._id);
+
+      // Send verification email
+      try {
+        const frontendURL = process.env.FRONTEND_URL || 'http://localhost:3000';
+        const verificationLink = `${frontendURL}/auth/verify?token=${token}`;
+
+        await NotificationService.sendNotification({
+          userId: user._id,
+          type: 'email',
+          category: 'system',
+          priority: 'high',
+          title: 'Verify Your Email - PCC Portal',
+          message: `Hi ${user.firstName},\n\nHere's your new verification code.\n\nMethod 1: Click the link below\n${verificationLink}\n\nMethod 2: Enter this code manually\nVerification Code: ${otp}\n\nThis link and code will expire in 24 hours.`,
+          metadata: {
+            verificationLink,
+            otp,
+            expiresIn: '24 hours'
+          }
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+      }
+
+      // Log resend action
+      await AuditLog.create({
+        userId: user._id,
+        action: 'resend_verification',
+        category: 'verification',
+        status: 'success',
+        ipAddress,
+        userAgent,
+        metadata: { email: normalizedEmail }
+      });
+
+      res.json({
+        success: true,
+        message: 'Verification email has been resent. Please check your inbox.'
+      });
+
+    } catch (error) {
+      await AuditLog.create({
+        action: 'resend_verification_error',
+        category: 'verification',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
+  }
+);
+
+// Login user (Session-based)
+router.post('/login',
+  rateLimitLogin,
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('password').exists().withMessage('Password is required')
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      // Validate input
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { email, password } = req.body;
+
+      // Find user
+      const user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        // Log failed login attempt
+        await AuditLog.create({
+          action: 'login_failed',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'user_not_found', email: email.toLowerCase() }
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+
+      if (!user.isActive) {
+        // Log blocked login attempt
+        await AuditLog.create({
+          userId: user._id,
+          action: 'login_blocked',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'account_deactivated', email: user.email }
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: 'Account is deactivated. Please contact administration.'
+        });
+      }
+
+      // Verify password
+      const isValidPassword = await user.comparePassword(password);
+
+      if (!isValidPassword) {
+        // Log failed login attempt
+        await AuditLog.create({
+          userId: user._id,
+          action: 'login_failed',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'invalid_password', email: user.email }
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: 'Invalid credentials'
+        });
+      }
+
+      // Check email verification for local auth users
+      if (user.authProvider === 'local' && !user.emailVerified) {
+        // Log blocked login attempt
+        await AuditLog.create({
+          userId: user._id,
+          action: 'login_blocked',
+          category: 'auth',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'email_not_verified', email: user.email }
+        });
+
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: 'EMAIL_NOT_VERIFIED',
+            message: 'Please verify your email address before logging in.',
+            emailVerified: false,
+            email: user.email
+          }
+        });
+      }
+
+      // Check if 2FA is enabled
+      const is2FAEnabled = await TwoFactorService.isEnabled(user._id);
+
+      if (is2FAEnabled) {
+        // Generate and send 2FA code
+        try {
+          const { code, expiresAt } = await TwoFactorService.generateAndStoreCode(user._id);
+
+          // Send 2FA code via email
+          await NotificationService.sendNotification({
+            userId: user._id,
+            type: 'email',
+            category: 'system',
+            priority: 'high',
+            title: 'Your 2FA Code - PCC Portal',
+            message: `Hi ${user.firstName},\n\nYour two-factor authentication code is:\n\n${code}\n\nThis code will expire in 10 minutes.\n\nIf you didn't request this code, please secure your account immediately.`,
+            metadata: {
+              code,
+              expiresAt
+            }
+          });
+
+          // Log 2FA code sent
+          await AuditLog.create({
+            userId: user._id,
+            action: '2fa_code_sent',
+            category: '2fa',
+            status: 'success',
+            ipAddress,
+            userAgent,
+            metadata: { email: user.email }
+          });
+
+          return res.json({
+            success: true,
+            requiresTwoFactor: true,
+            message: 'Please enter the 2FA code sent to your email',
+            data: {
+              email: user.email,
+              expiresAt
+            }
+          });
+
+        } catch (twoFactorError) {
+          console.error('2FA code generation error:', twoFactorError);
+
+          // Log error
+          await AuditLog.create({
+            userId: user._id,
+            action: '2fa_code_error',
+            category: '2fa',
+            status: 'error',
+            ipAddress,
+            userAgent,
+            metadata: { error: twoFactorError.message }
+          });
+
+          return res.status(500).json({
+            success: false,
+            error: {
+              code: '2FA_ERROR',
+              message: twoFactorError.message
+            }
+          });
+        }
+      }
+
+      // No 2FA - proceed with normal login
+      // Update last login
+      user.lastLogin = new Date();
+      await user.save();
+
+      // Log successful login
+      await AuditLog.create({
+        userId: user._id,
+        action: 'login_success',
+        category: 'auth',
+        status: 'success',
+        ipAddress,
+        userAgent,
+        metadata: {
+          email: user.email,
+          role: user.role,
+          authProvider: user.authProvider
+        }
+      });
+
+      // Create session using Passport
+      req.login(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+
+        res.json({
+          success: true,
+          message: 'Login successful',
+          data: {
+            user: {
+              id: user._id,
+              email: user.email,
+              role: user.role,
+              firstName: user.firstName,
+              lastName: user.lastName,
+              authProvider: user.authProvider,
+              profilePicture: user.profilePicture,
+              emailVerified: user.emailVerified,
+              twoFactorEnabled: user.twoFactorEnabled
+            }
+          }
+        });
+      });
+
+    } catch (error) {
+      // Log error
+      await AuditLog.create({
+        action: 'login_error',
+        category: 'auth',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
   }
 });
 
@@ -368,56 +864,129 @@ router.post('/apple/callback', (req, res, next) => {
 
 // Refresh token
 router.post('/refresh', async (req, res, next) => {
+  const ipAddress = req.ip || req.connection.remoteAddress;
+  const userAgent = req.get('user-agent');
+
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
       return res.status(401).json({
         success: false,
-        message: 'Refresh token is required'
+        error: {
+          code: 'REFRESH_TOKEN_REQUIRED',
+          message: 'Refresh token is required'
+        }
       });
     }
 
     // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    const verification = await JWTTokenService.verifyRefreshToken(refreshToken);
 
-    // Check if user still exists
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.isActive) {
+    if (!verification.valid) {
+      await AuditLog.create({
+        action: 'token_refresh_failed',
+        category: 'auth',
+        status: 'failure',
+        ipAddress,
+        userAgent,
+        metadata: { reason: verification.error }
+      });
+
       return res.status(401).json({
         success: false,
-        message: 'Invalid refresh token'
+        error: {
+          code: 'INVALID_REFRESH_TOKEN',
+          message: verification.error
+        }
       });
     }
 
-    // Generate new access token
-    const newAccessToken = jwt.sign(
-      { userId: decoded.userId, email: decoded.email, role: decoded.role },
-      process.env.JWT_SECRET,
-      { expiresIn: process.env.JWT_EXPIRE || '24h' }
-    );
+    // Check if user still exists and is active
+    const user = await User.findById(verification.payload.userId);
+    if (!user || !user.isActive) {
+      await AuditLog.create({
+        userId: verification.payload.userId,
+        action: 'token_refresh_failed',
+        category: 'auth',
+        status: 'failure',
+        ipAddress,
+        userAgent,
+        metadata: { reason: 'user_not_found_or_inactive' }
+      });
+
+      return res.status(401).json({
+        success: false,
+        error: {
+          code: 'INVALID_USER',
+          message: 'User not found or inactive'
+        }
+      });
+    }
+
+    // Refresh tokens (with rotation)
+    const newTokens = await JWTTokenService.refreshAccessToken(refreshToken, {
+      id: user._id,
+      email: user.email,
+      role: user.role
+    });
+
+    // Log successful token refresh
+    await AuditLog.create({
+      userId: user._id,
+      action: 'token_refresh_success',
+      category: 'auth',
+      status: 'success',
+      ipAddress,
+      userAgent,
+      metadata: { email: user.email }
+    });
 
     res.json({
       success: true,
       data: {
-        accessToken: newAccessToken
+        accessToken: newTokens.accessToken,
+        refreshToken: newTokens.refreshToken
       }
     });
 
   } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token'
-      });
-    }
+    await AuditLog.create({
+      action: 'token_refresh_error',
+      category: 'auth',
+      status: 'error',
+      ipAddress,
+      userAgent,
+      metadata: { error: error.message }
+    }).catch(err => console.error('Failed to log error:', err));
+
     next(error);
   }
 });
 
 // Logout
 router.post('/logout', async (req, res, next) => {
+  const ipAddress = req.ip || req.connection.remoteAddress;
+  const userAgent = req.get('user-agent');
+
   try {
+    const userId = req.user?._id;
+
+    // Invalidate all refresh tokens for the user
+    if (userId) {
+      await JWTTokenService.invalidateAllUserTokens(userId.toString());
+
+      // Log logout
+      await AuditLog.create({
+        userId,
+        action: 'logout',
+        category: 'auth',
+        status: 'success',
+        ipAddress,
+        userAgent
+      });
+    }
+
     req.logout((err) => {
       if (err) {
         return next(err);
@@ -436,6 +1005,292 @@ router.post('/logout', async (req, res, next) => {
         });
       });
     });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Enable 2FA
+router.post('/2fa/enable',
+  verifyToken,
+  [
+    body('method').optional().isIn(['email', 'sms', 'totp']).withMessage('Invalid 2FA method')
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      const userId = req.user.id;
+      const { method = 'email' } = req.body;
+
+      // Enable 2FA
+      const result = await TwoFactorService.enable(userId, method);
+
+      // Log 2FA enable
+      await AuditLog.create({
+        userId,
+        action: '2fa_enabled',
+        category: '2fa',
+        status: 'success',
+        ipAddress,
+        userAgent,
+        metadata: { method }
+      });
+
+      res.json({
+        success: true,
+        message: '2FA enabled successfully. Save your backup codes in a secure location.',
+        data: {
+          backupCodes: result.backupCodes,
+          method
+        }
+      });
+
+    } catch (error) {
+      await AuditLog.create({
+        userId: req.user?.id,
+        action: '2fa_enable_error',
+        category: '2fa',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
+  }
+);
+
+// Verify 2FA code
+router.post('/2fa/verify',
+  rateLimitTwoFactor,
+  [
+    body('email').isEmail().normalizeEmail(),
+    body('code').trim().isLength({ min: 6, max: 6 }).withMessage('Code must be 6 digits'),
+    body('isBackupCode').optional().isBoolean()
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const { email, code, isBackupCode = false } = req.body;
+
+      // Find user
+      const user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        await AuditLog.create({
+          action: '2fa_verify_failed',
+          category: '2fa',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'user_not_found', email }
+        });
+
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'INVALID_CREDENTIALS',
+            message: 'Invalid credentials'
+          }
+        });
+      }
+
+      // Verify code
+      let result;
+      if (isBackupCode) {
+        result = await TwoFactorService.verifyBackupCode(user._id, code);
+      } else {
+        result = await TwoFactorService.verifyUserCode(user._id, code);
+      }
+
+      if (!result.valid) {
+        await AuditLog.create({
+          userId: user._id,
+          action: '2fa_verify_failed',
+          category: '2fa',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: {
+            reason: result.error,
+            locked: result.locked,
+            remainingAttempts: result.remainingAttempts
+          }
+        });
+
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: result.locked ? 'ACCOUNT_LOCKED' : 'INVALID_CODE',
+            message: result.error,
+            locked: result.locked,
+            remainingAttempts: result.remainingAttempts
+          }
+        });
+      }
+
+      // Generate tokens
+      const tokens = await generateTokens(user._id, user.email, user.role);
+
+      // Log successful 2FA verification
+      await AuditLog.create({
+        userId: user._id,
+        action: '2fa_verify_success',
+        category: '2fa',
+        status: 'success',
+        ipAddress,
+        userAgent,
+        metadata: {
+          isBackupCode,
+          remainingBackupCodes: result.remainingBackupCodes
+        }
+      });
+
+      res.json({
+        success: true,
+        message: '2FA verification successful',
+        data: {
+          user: {
+            id: user._id,
+            email: user.email,
+            role: user.role,
+            firstName: user.firstName,
+            lastName: user.lastName
+          },
+          tokens,
+          ...(result.remainingBackupCodes !== undefined && {
+            remainingBackupCodes: result.remainingBackupCodes
+          })
+        }
+      });
+
+    } catch (error) {
+      await AuditLog.create({
+        action: '2fa_verify_error',
+        category: '2fa',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
+  }
+);
+
+// Disable 2FA
+router.post('/2fa/disable',
+  verifyToken,
+  [
+    body('password').exists().withMessage('Password is required')
+  ],
+  async (req, res, next) => {
+    const ipAddress = req.ip || req.connection.remoteAddress;
+    const userAgent = req.get('user-agent');
+
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array()
+        });
+      }
+
+      const userId = req.user.id;
+      const { password } = req.body;
+
+      // Verify password
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
+
+      const isValidPassword = await user.comparePassword(password);
+      if (!isValidPassword) {
+        await AuditLog.create({
+          userId,
+          action: '2fa_disable_failed',
+          category: '2fa',
+          status: 'failure',
+          ipAddress,
+          userAgent,
+          metadata: { reason: 'invalid_password' }
+        });
+
+        return res.status(401).json({
+          success: false,
+          error: {
+            code: 'INVALID_PASSWORD',
+            message: 'Invalid password'
+          }
+        });
+      }
+
+      // Disable 2FA
+      await TwoFactorService.disable(userId);
+
+      // Log 2FA disable
+      await AuditLog.create({
+        userId,
+        action: '2fa_disabled',
+        category: '2fa',
+        status: 'success',
+        ipAddress,
+        userAgent
+      });
+
+      res.json({
+        success: true,
+        message: '2FA disabled successfully'
+      });
+
+    } catch (error) {
+      await AuditLog.create({
+        userId: req.user?.id,
+        action: '2fa_disable_error',
+        category: '2fa',
+        status: 'error',
+        ipAddress,
+        userAgent,
+        metadata: { error: error.message }
+      }).catch(err => console.error('Failed to log error:', err));
+
+      next(error);
+    }
+  }
+);
+
+// Get 2FA status
+router.get('/2fa/status', verifyToken, async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const status = await TwoFactorService.getStatus(userId);
+
+    res.json({
+      success: true,
+      data: status
+    });
+
   } catch (error) {
     next(error);
   }

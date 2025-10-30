@@ -123,6 +123,94 @@ class SocketManager {
         }
       });
 
+      // Handle announcement-specific events
+      socket.on('announcement:acknowledge', async (data) => {
+        try {
+          const { announcementId, timestamp } = data;
+          const AnnouncementNotificationService = require('../services/AnnouncementNotificationService');
+          
+          // Mark announcement as acknowledged
+          await redisConnection.set(`announcement:ack:${announcementId}:${socket.userId}`, timestamp, 86400);
+          
+          socket.emit('announcement:acknowledged', { 
+            announcementId, 
+            acknowledgedAt: timestamp 
+          });
+          
+          console.log(`User ${socket.userId} acknowledged announcement ${announcementId}`);
+        } catch (error) {
+          console.error('Announcement acknowledgment error:', error);
+          socket.emit('announcement:error', { error: 'Failed to acknowledge announcement' });
+        }
+      });
+
+      // Handle announcement read events
+      socket.on('announcement:mark-read', async (data) => {
+        try {
+          const { announcementId, deviceInfo } = data;
+          const AnnouncementNotificationService = require('../services/AnnouncementNotificationService');
+          
+          const result = await AnnouncementNotificationService.markAsRead(
+            announcementId, 
+            socket.userId, 
+            deviceInfo
+          );
+          
+          if (result.success) {
+            socket.emit('announcement:marked-read', { 
+              announcementId,
+              readAt: new Date()
+            });
+          } else {
+            socket.emit('announcement:error', { error: result.error });
+          }
+        } catch (error) {
+          console.error('Mark announcement read error:', error);
+          socket.emit('announcement:error', { error: 'Failed to mark announcement as read' });
+        }
+      });
+
+      // Handle sound notification preferences
+      socket.on('notification:sound-preference', async (data) => {
+        try {
+          const { enableSound, soundType } = data;
+          
+          // Store user sound preferences in Redis
+          await redisConnection.set(
+            `user:sound_prefs:${socket.userId}`, 
+            JSON.stringify({ enableSound, soundType }), 
+            86400
+          );
+          
+          socket.emit('notification:sound-preference-updated', { enableSound, soundType });
+        } catch (error) {
+          console.error('Sound preference update error:', error);
+          socket.emit('notification:error', { error: 'Failed to update sound preferences' });
+        }
+      });
+
+      // Handle real-time typing indicators for announcements
+      socket.on('announcement:typing', (data) => {
+        const { announcementId, isTyping } = data;
+        socket.to(`announcement:${announcementId}`).emit('announcement:user-typing', {
+          userId: socket.userId,
+          isTyping,
+          timestamp: new Date()
+        });
+      });
+
+      // Join announcement room for real-time updates
+      socket.on('announcement:join', (announcementId) => {
+        socket.join(`announcement:${announcementId}`);
+        console.log(`User ${socket.userId} joined announcement room ${announcementId}`);
+      });
+
+      // Leave announcement room
+      socket.on('announcement:leave', (announcementId) => {
+        socket.leave(`announcement:${announcementId}`);
+        console.log(`User ${socket.userId} left announcement room ${announcementId}`);
+      });
+
       // Handle notification read status
       socket.on('notification:mark-read', async (data) => {
         try {
