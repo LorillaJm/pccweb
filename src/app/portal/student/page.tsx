@@ -12,6 +12,18 @@ import { QuickStatsCard } from '@/components/portal/QuickStatsCard';
 import { AnnouncementsFeed } from '@/components/portal/AnnouncementsFeed';
 import { UpcomingEventsSection } from '@/components/portal/UpcomingEventsSection';
 import { motion } from 'framer-motion';
+import {
+  cardVariants,
+  listItemVariants,
+  buttonVariants,
+  iconRotateVariants,
+  staggerContainer,
+  staggerItem,
+  getStaggerDelay,
+  timing,
+  easing,
+  hoverLift,
+} from '@/lib/animations';
 
 export default function StudentDashboard() {
   const { user, profile, isAuthenticated, isLoading } = useAuth();
@@ -84,7 +96,12 @@ export default function StudentDashboard() {
           />
 
           {/* Quick Stats - Animated Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <motion.div 
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
             <QuickStatsCard
               title="Enrolled Subjects"
               value={isLoadingDashboard ? '...' : enrolledSubjects.length}
@@ -117,7 +134,7 @@ export default function StudentDashboard() {
               gradient="from-amber-600 to-orange-600"
               delay={0.4}
             />
-          </div>
+          </motion.div>
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -132,17 +149,27 @@ export default function StudentDashboard() {
                 <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
+                      <motion.div 
+                        whileHover={{ rotate: 360, scale: 1.1 }}
+                        transition={{ duration: timing.slow, ease: easing.smooth }}
+                        className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center"
+                      >
                         <BookOpen className="h-5 w-5 text-white" />
-                      </div>
+                      </motion.div>
                       <h3 className="text-xl font-bold text-gray-900">My Subjects</h3>
                     </div>
-                    <Link
-                      href="/portal/student/subjects"
-                      className="text-blue-600 hover:text-blue-700 text-sm font-semibold bg-white px-4 py-2 rounded-xl hover:shadow-md transition-all"
+                    <motion.div
+                      whileHover={{ scale: 1.05, x: 2 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: timing.fast }}
                     >
-                      View All →
-                    </Link>
+                      <Link
+                        href="/portal/student/subjects"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-semibold bg-white px-4 py-2 rounded-xl hover:shadow-md transition-all"
+                      >
+                        View All →
+                      </Link>
+                    </motion.div>
                   </div>
                 </div>
                 
@@ -153,20 +180,29 @@ export default function StudentDashboard() {
                       <p className="mt-2 text-gray-600">Loading subjects...</p>
                     </div>
                   ) : enrolledSubjects.length > 0 ? (
-                    <div className="space-y-4">
+                    <motion.div 
+                      variants={staggerContainer}
+                      initial="initial"
+                      animate="animate"
+                      className="space-y-4"
+                    >
                       {enrolledSubjects.slice(0, 4).map((subject, index) => (
                         <motion.div
                           key={subject.sectionId}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.05 * index }}
-                          whileHover={{ scale: 1.01, x: 5 }}
-                          className="group p-5 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 border border-gray-200 hover:border-blue-200 rounded-xl transition-all cursor-pointer"
+                          variants={listItemVariants}
+                          whileHover={{ 
+                            scale: 1.02, 
+                            x: 8,
+                            boxShadow: "0 10px 30px -10px rgba(59, 130, 246, 0.3)",
+                            transition: { duration: timing.fast, ease: easing.smooth }
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                          className="group p-5 bg-gradient-to-r from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 border border-gray-200 hover:border-blue-300 rounded-xl transition-colors cursor-pointer"
                         >
                           <div className="flex items-center">
                             <motion.div
-                              whileHover={{ rotate: 360 }}
-                              transition={{ duration: 0.5 }}
+                              whileHover={{ rotate: 360, scale: 1.1 }}
+                              transition={{ duration: timing.slow, ease: easing.smooth }}
                               className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-md"
                             >
                               <BookOpen className="h-6 w-6 text-white" />
@@ -179,24 +215,41 @@ export default function StudentDashboard() {
                                 {subject.subjectName}
                               </p>
                               <div className="flex items-center space-x-4 text-xs text-gray-500">
-                                <div className="flex items-center">
+                                <motion.div 
+                                  className="flex items-center"
+                                  whileHover={{ x: 2 }}
+                                  transition={{ duration: timing.fast }}
+                                >
                                   <Users className="h-3 w-3 mr-1" />
                                   <span>{subject.facultyName}</span>
-                                </div>
-                                <div className="flex items-center">
+                                </motion.div>
+                                <motion.div 
+                                  className="flex items-center"
+                                  whileHover={{ x: 2 }}
+                                  transition={{ duration: timing.fast }}
+                                >
                                   <Clock className="h-3 w-3 mr-1" />
                                   <span>{subject.schedule || 'TBA'}</span>
-                                </div>
+                                </motion.div>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="bg-blue-100 group-hover:bg-blue-200 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full transition-colors">
+                              <motion.div 
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ duration: timing.fast }}
+                                className="bg-blue-100 group-hover:bg-blue-200 text-blue-700 text-sm font-semibold px-3 py-1 rounded-full transition-colors"
+                              >
                                 {subject.units} {subject.units === 1 ? 'unit' : 'units'}
-                              </div>
+                              </motion.div>
                               {subject.materialCount && subject.materialCount > 0 && (
-                                <div className="text-xs text-green-600 mt-1 font-medium">
+                                <motion.div 
+                                  initial={{ opacity: 0, y: -5 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ delay: 0.1 }}
+                                  className="text-xs text-green-600 mt-1 font-medium"
+                                >
                                   📁 {subject.materialCount} materials
-                                </div>
+                                </motion.div>
                               )}
                             </div>
                           </div>
@@ -204,27 +257,54 @@ export default function StudentDashboard() {
                       ))}
                       
                       {enrolledSubjects.length > 4 && (
-                        <div className="text-center pt-4">
-                          <Link 
-                            href="/portal/student/subjects"
-                            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                        <motion.div 
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.4 }}
+                          className="text-center pt-4"
+                        >
+                          <motion.div
+                            whileHover={{ scale: 1.05, x: 3 }}
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ duration: timing.fast }}
                           >
-                            View {enrolledSubjects.length - 4} more subjects →
-                          </Link>
-                        </div>
+                            <Link 
+                              href="/portal/student/subjects"
+                              className="text-blue-600 hover:text-blue-700 text-sm font-medium inline-block"
+                            >
+                              View {enrolledSubjects.length - 4} more subjects →
+                            </Link>
+                          </motion.div>
+                        </motion.div>
                       )}
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="text-center py-12">
-                      <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p className="text-gray-500">No enrolled subjects yet.</p>
-                      <Link 
-                        href="/portal/student/subjects"
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block"
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: timing.normal }}
+                      className="text-center py-12"
+                    >
+                      <motion.div
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: easing.smooth }}
                       >
-                        Browse available subjects
-                      </Link>
-                    </div>
+                        <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      </motion.div>
+                      <p className="text-gray-500">No enrolled subjects yet.</p>
+                      <motion.div
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: timing.fast }}
+                      >
+                        <Link 
+                          href="/portal/student/subjects"
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium mt-2 inline-block"
+                        >
+                          Browse available subjects
+                        </Link>
+                      </motion.div>
+                    </motion.div>
                   )}
                 </div>
               </motion.div>
@@ -250,12 +330,21 @@ export default function StudentDashboard() {
             className="bg-white/90 backdrop-blur-xl rounded-2xl shadow-xl border border-gray-200/60 p-8"
           >
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+              <motion.div 
+                whileHover={{ rotate: 360, scale: 1.1 }}
+                transition={{ duration: timing.slow, ease: easing.smooth }}
+                className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center"
+              >
                 <Award className="h-5 w-5 text-white" />
-              </div>
+              </motion.div>
               <h3 className="text-xl font-bold text-gray-900">Quick Actions</h3>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <motion.div 
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+              className="grid grid-cols-2 md:grid-cols-4 gap-6"
+            >
               {[
                 { href: '/portal/student/subjects', icon: BookOpen, label: 'My Subjects', desc: '📚 View courses', gradient: 'from-blue-500 to-indigo-600' },
                 { href: '/portal/student/announcements', icon: Award, label: 'Announcements', desc: '📢 Latest news', gradient: 'from-yellow-500 to-orange-500' },
@@ -264,28 +353,41 @@ export default function StudentDashboard() {
               ].map((action, index) => (
                 <motion.div
                   key={action.href}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 + 0.1 * index }}
-                  whileHover={{ scale: 1.05, y: -5 }}
+                  variants={staggerItem}
+                  whileHover={{ 
+                    scale: 1.08, 
+                    y: -8,
+                    boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.2)",
+                    transition: { duration: timing.fast, ease: easing.smooth }
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   <Link 
                     href={action.href}
-                    className="group flex flex-col items-center p-6 bg-gradient-to-br from-gray-50 to-white hover:from-white hover:to-gray-50 rounded-2xl transition-all border border-gray-200 hover:border-gray-300 hover:shadow-lg"
+                    className="group flex flex-col items-center p-6 bg-gradient-to-br from-gray-50 to-white hover:from-white hover:to-gray-50 rounded-2xl transition-colors border border-gray-200 hover:border-gray-300"
                   >
                     <motion.div
-                      whileHover={{ rotate: 360 }}
-                      transition={{ duration: 0.5 }}
+                      whileHover={{ 
+                        rotate: 360,
+                        scale: 1.1,
+                        transition: { duration: timing.slow, ease: easing.smooth }
+                      }}
                       className={`w-16 h-16 bg-gradient-to-br ${action.gradient} rounded-2xl flex items-center justify-center shadow-lg`}
                     >
                       <action.icon className="h-8 w-8 text-white" />
                     </motion.div>
-                    <span className="mt-4 text-sm font-semibold text-gray-900">{action.label}</span>
+                    <motion.span 
+                      className="mt-4 text-sm font-semibold text-gray-900"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: timing.fast }}
+                    >
+                      {action.label}
+                    </motion.span>
                     <span className="text-xs text-gray-600 mt-1">{action.desc}</span>
                   </Link>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </motion.div>
 
           {error && (

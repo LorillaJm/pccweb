@@ -80,6 +80,64 @@ const announcementSchema = new mongoose.Schema({
       type: Date,
       default: Date.now
     }
+  }],
+  // Real-time notification settings
+  notificationSettings: {
+    enableRealTime: {
+      type: Boolean,
+      default: true
+    },
+    enableSound: {
+      type: Boolean,
+      default: true
+    },
+    soundType: {
+      type: String,
+      enum: ['default', 'urgent', 'gentle', 'custom'],
+      default: 'default'
+    },
+    customSoundUrl: String,
+    pushToMobile: {
+      type: Boolean,
+      default: true
+    },
+    emailNotification: {
+      type: Boolean,
+      default: false
+    }
+  },
+  // Delivery tracking
+  deliveryStats: {
+    totalTargeted: {
+      type: Number,
+      default: 0
+    },
+    delivered: {
+      type: Number,
+      default: 0
+    },
+    read: {
+      type: Number,
+      default: 0
+    },
+    failed: {
+      type: Number,
+      default: 0
+    }
+  },
+  // Read receipts
+  readBy: [{
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    readAt: {
+      type: Date,
+      default: Date.now
+    },
+    deviceInfo: {
+      type: String
+    }
   }]
 }, {
   timestamps: true,

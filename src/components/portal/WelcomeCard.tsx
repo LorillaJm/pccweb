@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { BookOpen, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
+import { timing, easing } from '@/lib/animations';
 
 interface WelcomeCardProps {
   firstName: string;
@@ -95,9 +96,22 @@ export function WelcomeCard({ firstName, program, yearLevel, semester }: Welcome
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="flex items-start gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20"
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: "0 10px 30px -10px rgba(255, 255, 255, 0.2)",
+                transition: { duration: timing.fast, ease: easing.smooth }
+              }}
+              className="flex items-start gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/20 cursor-default"
             >
-              <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300 flex-shrink-0 mt-1" />
+              <motion.div
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              >
+                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300 flex-shrink-0 mt-1" />
+              </motion.div>
               <p className="text-white/90 italic text-sm sm:text-base lg:text-lg break-words">"{quote}"</p>
             </motion.div>
 
@@ -109,22 +123,46 @@ export function WelcomeCard({ firstName, program, yearLevel, semester }: Welcome
               className="flex flex-wrap gap-2 sm:gap-3"
             >
               {program && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20">
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.05, 
+                    y: -2,
+                    transition: { duration: timing.fast, ease: easing.smooth }
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20 cursor-default"
+                >
                   <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse flex-shrink-0" />
                   <span className="text-white font-semibold text-sm sm:text-base whitespace-nowrap">{program}</span>
-                </div>
+                </motion.div>
               )}
               {yearLevel && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20">
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.05, 
+                    y: -2,
+                    transition: { duration: timing.fast, ease: easing.smooth }
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20 cursor-default"
+                >
                   <div className="w-2 h-2 bg-indigo-300 rounded-full animate-pulse flex-shrink-0" />
                   <span className="text-white font-semibold text-sm sm:text-base whitespace-nowrap">Year {yearLevel}</span>
-                </div>
+                </motion.div>
               )}
               {semester && (
-                <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20">
+                <motion.div 
+                  whileHover={{ 
+                    scale: 1.05, 
+                    y: -2,
+                    transition: { duration: timing.fast, ease: easing.smooth }
+                  }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-xl px-3 sm:px-4 py-1.5 sm:py-2 border border-white/20 cursor-default"
+                >
                   <div className="w-2 h-2 bg-purple-300 rounded-full animate-pulse flex-shrink-0" />
                   <span className="text-white font-semibold text-sm sm:text-base whitespace-nowrap">Semester {semester}</span>
-                </div>
+                </motion.div>
               )}
             </motion.div>
           </div>
@@ -141,12 +179,24 @@ export function WelcomeCard({ firstName, program, yearLevel, semester }: Welcome
                 y: [0, -10, 0],
                 rotate: [0, 5, -5, 0],
               }}
-              transition={{ duration: 4, repeat: Infinity }}
-              className="relative"
+              transition={{ duration: 4, repeat: Infinity, ease: easing.smooth }}
+              whileHover={{ 
+                scale: 1.1,
+                rotate: 0,
+                transition: { duration: timing.normal, ease: easing.smooth }
+              }}
+              className="relative cursor-pointer"
             >
               <div className="absolute inset-0 bg-white/20 rounded-3xl blur-2xl" />
               <div className="relative w-32 h-32 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20">
-                <BookOpen className="h-16 w-16 text-white" />
+                <motion.div
+                  whileHover={{ 
+                    rotate: 360,
+                    transition: { duration: timing.slow, ease: easing.smooth }
+                  }}
+                >
+                  <BookOpen className="h-16 w-16 text-white" />
+                </motion.div>
               </div>
             </motion.div>
           </motion.div>
