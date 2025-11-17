@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface Message {
@@ -56,6 +56,7 @@ export const useChatbot = (): UseChatbotReturn => {
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   // Generate unique message ID
   const generateMessageId = () => {
@@ -78,6 +79,26 @@ export const useChatbot = (): UseChatbotReturn => {
       setError('Please log in to use the chatbot');
       return null;
     }
+
+    // Prevent multiple simultaneous requests
+    if (isLoading) {
+      console.warn('Request already in progress, ignoring duplicate send');
+      return null;
+    }
+
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Set timeout (30 seconds)
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 30000);
 
     try {
       setError(null);
@@ -111,11 +132,19 @@ export const useChatbot = (): UseChatbotReturn => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        signal: abortController.signal,
         body: JSON.stringify({
           message: content,
           context,
         }),
       });
+
+      clearTimeout(timeoutId);
+
+      // Check if request was aborted
+      if (abortController.signal.aborted) {
+        return null;
+      }
 
       console.log('Chatbot API response status:', response.status);
 
@@ -126,6 +155,10 @@ export const useChatbot = (): UseChatbotReturn => {
         // Provide user-friendly error message for authentication issues
         if (response.status === 401) {
           throw new Error('Please log in to use the chatbot');
+        }
+        
+        if (response.status === 408 || response.status === 504) {
+          throw new Error('Request timed out. Please try again.');
         }
         
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
@@ -151,8 +184,38 @@ export const useChatbot = (): UseChatbotReturn => {
       return data;
 
     } catch (err) {
+      clearTimeout(timeoutId);
+      
+      // Don't show error if request was aborted (user cancelled or timeout)
+      if (abortController.signal.aborted) {
+        // Check if it was a timeout
+        if (err instanceof Error && err.name === 'AbortError') {
+          const errorMessage = 'Request timed out. The server is taking too long to respond. Please try again.';
+          setError(errorMessage);
+          addMessage({
+            content: errorMessage,
+            sender: 'bot',
+            timestamp: new Date(),
+            confidence: 0.1,
+          });
+        }
+        return null;
+      }
+
       console.error('Error sending message:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      
+      // Handle different error types
+      let errorMessage = 'Failed to send message';
+      if (err instanceof Error) {
+        if (err.name === 'AbortError') {
+          errorMessage = 'Request was cancelled or timed out. Please try again.';
+        } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
       setError(errorMessage);
       
       // Add error message to chat
@@ -167,12 +230,16 @@ export const useChatbot = (): UseChatbotReturn => {
     } finally {
       setIsLoading(false);
       setIsTyping(false);
+      abortControllerRef.current = null;
     }
-  }, [user, addMessage]);
+  }, [user, addMessage, isLoading]);
 
   // End conversation
   const endConversation = useCallback(async (satisfaction?: number): Promise<void> => {
     if (!conversationId) return;
+
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
 
     try {
       await fetch('/api/chatbot/end-conversation', {
@@ -181,11 +248,14 @@ export const useChatbot = (): UseChatbotReturn => {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
+        signal: abortController.signal,
         body: JSON.stringify({
           conversationId,
           satisfaction,
         }),
       });
+
+      clearTimeout(timeoutId);
 
       // Clear conversation state
       setConversationId(null);
@@ -193,8 +263,12 @@ export const useChatbot = (): UseChatbotReturn => {
       setError(null);
 
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error('Error ending conversation:', err);
-      setError('Failed to end conversation properly');
+      // Don't show error for timeout on end conversation
+      if (!abortController.signal.aborted) {
+        setError('Failed to end conversation properly');
+      }
     }
   }, [conversationId]);
 
@@ -214,11 +288,17 @@ export const useChatbot = (): UseChatbotReturn => {
   const getConversationHistory = useCallback(async (): Promise<void> => {
     if (!user) return;
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
+
     try {
       const response = await fetch('/api/chatbot/history', {
         method: 'GET',
         credentials: 'include',
+        signal: abortController.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         // If unauthorized (not logged in), silently fail - this is expected for guest users
@@ -253,8 +333,11 @@ export const useChatbot = (): UseChatbotReturn => {
       }
 
     } catch (err) {
-      console.error('Error loading conversation history:', err);
-      // Don't show error for history loading failure
+      clearTimeout(timeoutId);
+      // Don't show error for history loading failure or aborted requests
+      if (!abortController.signal.aborted) {
+        console.error('Error loading conversation history:', err);
+      }
     }
   }, [user]);
 

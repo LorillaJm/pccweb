@@ -197,8 +197,9 @@ export default function EventsManagement() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Event Title</label>
+                <label htmlFor="event-title" className="block text-sm font-medium text-gray-700">Event Title</label>
                 <input
+                  id="event-title"
                   type="text"
                   required
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
@@ -208,8 +209,9 @@ export default function EventsManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label htmlFor="event-description" className="block text-sm font-medium text-gray-700">Description</label>
                 <textarea
+                  id="event-description"
                   required
                   rows={4}
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
@@ -220,8 +222,9 @@ export default function EventsManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Event Date</label>
+                  <label htmlFor="event-date" className="block text-sm font-medium text-gray-700">Event Date</label>
                   <input
+                    id="event-date"
                     type="datetime-local"
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
@@ -230,8 +233,9 @@ export default function EventsManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Registration Deadline</label>
+                  <label htmlFor="registration-deadline" className="block text-sm font-medium text-gray-700">Registration Deadline</label>
                   <input
+                    id="registration-deadline"
                     type="datetime-local"
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
@@ -243,8 +247,9 @@ export default function EventsManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Location</label>
+                  <label htmlFor="event-location" className="block text-sm font-medium text-gray-700">Location</label>
                   <input
+                    id="event-location"
                     type="text"
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
@@ -253,8 +258,9 @@ export default function EventsManagement() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Category</label>
+                  <label htmlFor="event-category" className="block text-sm font-medium text-gray-700">Category</label>
                   <select
+                    id="event-category"
                     required
                     className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2"
                     value={formData.category}
@@ -273,8 +279,9 @@ export default function EventsManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Capacity</label>
+                <label htmlFor="event-capacity" className="block text-sm font-medium text-gray-700">Capacity</label>
                 <input
+                  id="event-capacity"
                   type="number"
                   required
                   min="1"
