@@ -66,9 +66,13 @@ export default function StudentDashboard() {
       console.error('Failed to fetch dashboard data:', error);
       const status = error?.response?.status;
       if (status === 401) {
-        // Check if we're calling the wrong API
+        // Check if we're in development and calling production API
+        const isDevelopment = process.env.NODE_ENV === 'development';
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://pccweb.onrender.com/api';
-        if (apiUrl.includes('pccweb.onrender.com')) {
+        const isProductionApi = apiUrl.includes('pccweb.onrender.com') || apiUrl.includes('onrender.com');
+        
+        // Only show the specific error if we're in development AND using production API
+        if (isDevelopment && isProductionApi) {
           setError('⚠️ Frontend is calling production API but you\'re logged into local backend. Please restart frontend: npm run dev');
         } else {
           setError('Your session has expired. Please sign in again.');
