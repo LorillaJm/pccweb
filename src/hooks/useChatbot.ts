@@ -123,13 +123,14 @@ export const useChatbot = (): UseChatbotReturn => {
         deviceType: window.innerWidth < 768 ? 'mobile' : 'desktop',
       };
 
-      // Call chatbot API
-      console.log('Sending message to chatbot API:', { message: content, context });
+      // Call AI-powered chatbot API
+      console.log('Sending message to AI chatbot API:', { message: content, context });
       
       // Get JWT token from localStorage if available (for OAuth)
       const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       
-      const response = await fetch('/api/chatbot/message', {
+      // Use new AI-powered endpoint
+      const response = await fetch('/api/ai/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
