@@ -126,10 +126,14 @@ export const useChatbot = (): UseChatbotReturn => {
       // Call chatbot API
       console.log('Sending message to chatbot API:', { message: content, context });
       
+      // Get JWT token from localStorage if available (for OAuth)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      
       const response = await fetch('/api/chatbot/message', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         credentials: 'include',
         signal: abortController.signal,
@@ -242,10 +246,14 @@ export const useChatbot = (): UseChatbotReturn => {
     const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
 
     try {
+      // Get JWT token from localStorage if available (for OAuth)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      
       await fetch('/api/chatbot/end-conversation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         credentials: 'include',
         signal: abortController.signal,
@@ -292,8 +300,14 @@ export const useChatbot = (): UseChatbotReturn => {
     const timeoutId = setTimeout(() => abortController.abort(), 10000); // 10 second timeout
 
     try {
+      // Get JWT token from localStorage if available (for OAuth)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      
       const response = await fetch('/api/chatbot/history', {
         method: 'GET',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         credentials: 'include',
         signal: abortController.signal,
       });

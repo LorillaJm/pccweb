@@ -10,6 +10,10 @@ export async function POST(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     const cookieHeader = request.headers.get('cookie');
     
+    // Debug logging (remove in production)
+    console.log('Chatbot API Route - Auth Header:', authHeader ? 'Present' : 'Missing');
+    console.log('Chatbot API Route - Cookie Header:', cookieHeader ? 'Present' : 'Missing');
+    
     // Forward the request to the backend API
     const response = await fetch(`${API_BASE_URL}/chatbot/message`, {
       method: 'POST',
