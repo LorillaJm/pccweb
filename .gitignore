@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/backend/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -39,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large documentation folders
+/documents
+
+# test files in root
+test-*.js
+test-*.ts
+test-*.tsx
+verify-*.js
+verify-*.ts
+verify-*.tsx

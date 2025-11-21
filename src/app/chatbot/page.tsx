@@ -26,6 +26,7 @@ export default function ChatbotPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => Math.random().toString(36).substring(7));
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -39,7 +40,7 @@ export default function ChatbotPage() {
     // Add welcome message
     const welcomeMessage: Message = {
       id: 'welcome',
-      text: `Hello ${user?.first_name}! I'm the PCC Assistant. I can help you with questions about enrollment, payments, grades, learning materials, and more. What would you like to know?`,
+      text: `Hello ${user?.firstName}! I'm the PCC Assistant. I can help you with questions about enrollment, payments, grades, learning materials, and more. What would you like to know?`,
       isUser: false,
       timestamp: new Date()
     };
@@ -49,9 +50,24 @@ export default function ChatbotPage() {
   const sendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
 
+    // Cancel any existing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // Set timeout (30 seconds)
+    const timeoutId = setTimeout(() => {
+      abortController.abort();
+    }, 30000);
+
+    const messageToSend = inputMessage;
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: inputMessage,
+      text: messageToSend,
       isUser: true,
       timestamp: new Date()
     };
@@ -67,13 +83,24 @@ export default function ChatbotPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
+        signal: abortController.signal,
         body: JSON.stringify({
-          message: inputMessage,
+          message: messageToSend,
           sessionId: sessionId
         })
       });
 
+      clearTimeout(timeoutId);
+
+      // Check if request was aborted
+      if (abortController.signal.aborted) {
+        return;
+      }
+
       if (!response.ok) {
+        if (response.status === 408 || response.status === 504) {
+          throw new Error('Request timed out. Please try again.');
+        }
         throw new Error('Failed to get response');
       }
 
@@ -102,16 +129,46 @@ export default function ChatbotPage() {
       }
 
     } catch (error) {
+      clearTimeout(timeoutId);
+      
+      // Don't show error if request was aborted (user cancelled or timeout)
+      if (abortController.signal.aborted) {
+        if (error instanceof Error && error.name === 'AbortError') {
+          const timeoutMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: 'Request timed out. The server is taking too long to respond. Please try again.',
+            isUser: false,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, timeoutMessage]);
+        }
+        return;
+      }
+
       console.error('Error sending message:', error);
+      
+      // Handle different error types
+      let errorText = 'Sorry, I encountered an error. Please try again or contact support.';
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorText = 'Request was cancelled or timed out. Please try again.';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorText = 'Network error. Please check your connection and try again.';
+        } else if (error.message) {
+          errorText = error.message;
+        }
+      }
+
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: 'Sorry, I encountered an error. Please try again or contact support.',
+        text: errorText,
         isUser: false,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -185,8 +242,8 @@ export default function ChatbotPage() {
                 <div className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">
                   <div className="flex space-x-1">
                     <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.1s]"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce [animation-delay:0.2s]"></div>
                   </div>
                 </div>
               </div>
@@ -226,8 +283,10 @@ export default function ChatbotPage() {
                 onClick={sendMessage}
                 disabled={!inputMessage.trim() || isLoading}
                 className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg transition-colors"
+                aria-label="Send message"
+                title="Send message"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
               </button>
